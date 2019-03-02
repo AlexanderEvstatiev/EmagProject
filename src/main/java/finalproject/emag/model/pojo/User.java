@@ -1,6 +1,5 @@
 package finalproject.emag.model.pojo;
 
-import finalproject.emag.model.pojo.Order;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
