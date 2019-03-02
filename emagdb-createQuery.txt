@@ -1,0 +1,230 @@
+-- MySQL Workbench Forward Engineering
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+-- -----------------------------------------------------
+-- Schema mydb
+-- -----------------------------------------------------
+-- -----------------------------------------------------
+-- Schema emag
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schema emag
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `emag` DEFAULT CHARACTER SET utf8 ;
+USE `emag` ;
+
+-- -----------------------------------------------------
+-- Table `emag`.`main_categories`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `emag`.`main_categories` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `category_name` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `category_name_UNIQUE` (`category_name` ASC))
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `emag`.`users`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `emag`.`users` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `email` VARCHAR(100) NOT NULL,
+  `password` VARCHAR(100) NOT NULL,
+  `full_name` VARCHAR(200) NOT NULL,
+  `username` VARCHAR(100) NULL DEFAULT NULL,
+  `phone_number` VARCHAR(10) NULL DEFAULT NULL,
+  `birth_date` DATE NULL DEFAULT NULL,
+  `image_url` VARCHAR(100) NULL DEFAULT NULL,
+  `subscribed` TINYINT(1) NOT NULL,
+  `admin` TINYINT(1) NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `email_UNIQUE` (`email` ASC),
+  UNIQUE INDEX `username_UNIQUE` (`username` ASC))
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `emag`.`orders`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `emag`.`orders` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `user_id` INT(11) NOT NULL,
+  `total_price` DECIMAL(10,0) NOT NULL,
+  `order_date` DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `user_order_fk_idx` (`user_id` ASC),
+  CONSTRAINT `user_order_fk`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `emag`.`users` (`id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `emag`.`secondary_categories`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `emag`.`secondary_categories` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `category_id` INT(11) NOT NULL,
+  `sec_category_name` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `subcategory_name_UNIQUE` (`sec_category_name` ASC),
+  INDEX `category_main_fk_idx` (`category_id` ASC),
+  CONSTRAINT `category_main_fk`
+    FOREIGN KEY (`category_id`)
+    REFERENCES `emag`.`main_categories` (`id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `emag`.`subcategories`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `emag`.`subcategories` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `secondary_category_id` INT(11) NOT NULL,
+  `subcategory_name` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `subcategory_name_UNIQUE` (`subcategory_name` ASC),
+  INDEX `secondary_category_fk_idx` (`secondary_category_id` ASC),
+  CONSTRAINT `secondary_category_fk`
+    FOREIGN KEY (`secondary_category_id`)
+    REFERENCES `emag`.`secondary_categories` (`id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `emag`.`products`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `emag`.`products` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `subcategory_id` INT(11) NOT NULL,
+  `product_name` VARCHAR(100) NOT NULL,
+  `price` DECIMAL(10,0) NOT NULL,
+  `quantity` INT(11) NOT NULL,
+  `image_url` VARCHAR(100) NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `subcategory_fk_idx` (`subcategory_id` ASC),
+  CONSTRAINT `subcategory_fk`
+    FOREIGN KEY (`subcategory_id`)
+    REFERENCES `emag`.`subcategories` (`id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `emag`.`ordered_products`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `emag`.`ordered_products` (
+  `order_id` INT(11) NOT NULL,
+  `product_id` INT(11) NOT NULL,
+  `quantity` INT(11) NOT NULL,
+  PRIMARY KEY (`order_id`, `product_id`),
+  INDEX `order_fk_idx` (`order_id` ASC),
+  INDEX `product_fk_idx` (`product_id` ASC),
+  CONSTRAINT `order_fk`
+    FOREIGN KEY (`order_id`)
+    REFERENCES `emag`.`orders` (`id`),
+  CONSTRAINT `product_fk`
+    FOREIGN KEY (`product_id`)
+    REFERENCES `emag`.`products` (`id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `emag`.`product_promotions`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `emag`.`product_promotions` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `product_id` INT(11) NOT NULL,
+  `start_date` DATE NOT NULL,
+  `end_date` DATE NOT NULL,
+  `old_price` DECIMAL(10,0) NOT NULL,
+  `new_price` DECIMAL(10,0) NOT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `product_id_fk_idx` (`product_id` ASC),
+  CONSTRAINT `product_promo_fk`
+    FOREIGN KEY (`product_id`)
+    REFERENCES `emag`.`products` (`id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `emag`.`stats`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `emag`.`stats` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `subcat_id` INT(11) NOT NULL,
+  `stat_name` VARCHAR(100) NOT NULL,
+  `unit` VARCHAR(100) NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `subcat_fk_idx` (`subcat_id` ASC),
+  CONSTRAINT `subcat_fk`
+    FOREIGN KEY (`subcat_id`)
+    REFERENCES `emag`.`subcategories` (`id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `emag`.`products_with_stats`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `emag`.`products_with_stats` (
+  `product_id` INT(11) NOT NULL AUTO_INCREMENT,
+  `stat_id` INT(11) NOT NULL,
+  `value` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`product_id`, `stat_id`),
+  INDEX `stat_id_fk_idx` (`stat_id` ASC),
+  CONSTRAINT `product_id_fk`
+    FOREIGN KEY (`product_id`)
+    REFERENCES `emag`.`products` (`id`),
+  CONSTRAINT `stat_id_fk`
+    FOREIGN KEY (`stat_id`)
+    REFERENCES `emag`.`stats` (`id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `emag`.`reviews`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `emag`.`reviews` (
+  `user_id` INT(11) NOT NULL,
+  `product_id` INT(11) NOT NULL,
+  `title` VARCHAR(100) NOT NULL,
+  `comment` VARCHAR(500) NOT NULL,
+  `grade` INT(11) NOT NULL,
+  PRIMARY KEY (`user_id`, `product_id`),
+  INDEX `review_user_fk_idx` (`user_id` ASC),
+  INDEX `review_product_fk_idx` (`product_id` ASC),
+  CONSTRAINT `review_product_fk`
+    FOREIGN KEY (`product_id`)
+    REFERENCES `emag`.`products` (`id`),
+  CONSTRAINT `review_user_fk`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `emag`.`users` (`id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
