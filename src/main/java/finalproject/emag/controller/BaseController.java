@@ -1,4 +1,4 @@
-package finalproject.emag.model.controller;
+package finalproject.emag.controller;
 
 import finalproject.emag.model.pojo.ErrorMsg;
 import finalproject.emag.model.pojo.User;
