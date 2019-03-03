@@ -1,21 +1,25 @@
 package finalproject.emag.model.dao;
 
+import finalproject.emag.model.dto.CartViewProductDto;
 import finalproject.emag.model.dto.GlobalViewProductDto;
 import finalproject.emag.model.pojo.Product;
 import finalproject.emag.model.pojo.Review;
 import finalproject.emag.model.pojo.Stat;
+import finalproject.emag.model.pojo.User;
 import finalproject.emag.util.exception.BaseException;
 import finalproject.emag.util.exception.ProductNotFoundException;
+import finalproject.emag.util.exception.ProductOutOfStockException;
 import finalproject.emag.util.exception.WrongSearchWordException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import javax.servlet.http.HttpSession;
+import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class ProductDao {
@@ -217,6 +221,115 @@ public class ProductDao {
                 return;
             }
             throw new ProductNotFoundException("This product does not exist!");
+        }
+    }
+
+    public Product getProductForCart(long id) throws Exception{
+        checkIfProductExists(id);
+        checkProductQuantity(id);
+        try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
+            PreparedStatement ps = c.prepareStatement("SELECT product_name, price, quantity FROM products WHERE id=?");
+            ps.setLong(1, id);
+            ResultSet rs = ps.executeQuery();
+            Product p = new Product();
+            while (rs.next()) {
+                p.setId(id);
+                p.setName(rs.getString(1));
+                p.setPrice(rs.getDouble(2));
+                p.setQuantity(rs.getInt(3));
+            }
+            return p;
+        }
+    }
+
+    private void checkProductQuantity(long id) throws Exception {
+        try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
+            PreparedStatement ps = c.prepareStatement("SELECT quantity, product_name FROM products WHERE id = ?");
+            ps.setLong(1, id);
+            ResultSet rs = ps.executeQuery();
+            rs.next();
+            int quantity = rs.getInt(1);
+            String name = rs.getString(2);
+            if (quantity > 0) {
+                return;
+            }
+            throw new ProductOutOfStockException("The product " + name + " is out of stock right now.");
+        }
+    }
+
+    public ArrayList<CartViewProductDto> viewCart(HttpSession session) {
+        HashMap<Product, Integer> products = (HashMap<Product, Integer>) session.getAttribute("cart");
+        ArrayList<CartViewProductDto> cart = new ArrayList<>();
+        for (Map.Entry<Product, Integer> e : products.entrySet()) {
+            CartViewProductDto p = new CartViewProductDto();
+            p.setId(e.getKey().getId());
+            p.setName(e.getKey().getName());
+            p.setQuantity(e.getValue());
+            p.setPrice(e.getKey().getPrice() * e.getValue());
+            cart.add(p);
+        }
+        return cart;
+    }
+
+    public void makeOrder(HttpSession session) throws Exception{
+        HashMap<Product, Integer> products = (HashMap<Product, Integer>) session.getAttribute("cart");
+        for (Product p : products.keySet()) {
+            checkProductQuantity(p.getId());
+        }
+        double price = 0;
+        for (Map.Entry<Product, Integer> e : products.entrySet() ){
+            price += (e.getKey().getPrice() * e.getValue());
+        }
+        User u = (User) session.getAttribute("user");
+        Connection c = jdbcTemplate.getDataSource().getConnection();
+        try {
+            c.setAutoCommit(false);
+            long productId = insertOrder(u, c, price);
+            insertOrderProducts(c, products, productId);
+            updateQuantity(c, products);
+            session.setAttribute("cart", null);
+            c.commit();
+        }
+        catch (SQLException e) {
+            c.rollback();
+            throw new SQLException();
+        }
+        finally {
+            c.setAutoCommit(true);
+            c.close();
+        }
+    }
+
+    private long insertOrder(User u, Connection c, double price) throws SQLException{
+        PreparedStatement ps = c.prepareStatement("INSERT INTO orders (user_id, total_price, order_date) VALUES (?, ?, ?)", PreparedStatement.RETURN_GENERATED_KEYS);
+        ps.setLong(1, u.getId());
+        ps.setDouble(2, price);
+        java.sql.Date date = Date.valueOf(LocalDate.now().toString());
+        ps.setDate(3, date);
+        ps.execute();
+        ResultSet rs = ps.getGeneratedKeys();
+        rs.next();
+        return rs.getLong(1);
+    }
+
+    private void insertOrderProducts(Connection c, HashMap<Product, Integer> products, long orderId) throws SQLException {
+        for (Map.Entry<Product, Integer> e : products.entrySet()) {
+            PreparedStatement ps = c.prepareStatement("INSERT INTO ordered_products (order_id, product_id, quantity) VALUES (?, ?, ?)");
+            ps.setLong(1, orderId);
+            ps.setLong(2, e.getKey().getId());
+            ps.setInt(3, e.getValue());
+            ps.execute();
+            ps.close();
+        }
+    }
+
+    private void updateQuantity(Connection c, HashMap<Product, Integer> products) throws SQLException {
+        for (Map.Entry<Product, Integer> e : products.entrySet()) {
+            PreparedStatement ps = c.prepareStatement("UPDATE products SET quantity = quantity - ? WHERE id = ? ");
+            ps.setInt(1, e.getValue());
+            ps.setLong(2, e.getKey().getId());
+            ps.execute();
+            ps.close();
         }
     }
 }
