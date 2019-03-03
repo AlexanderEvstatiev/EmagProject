@@ -1,5 +1,8 @@
 package finalproject.emag.model.dao;
 
+import finalproject.emag.model.dto.EditEmailDto;
+import finalproject.emag.model.dto.EditPasswordDto;
+import finalproject.emag.model.dto.EditPersonalInfoDto;
 import finalproject.emag.model.pojo.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -63,4 +66,73 @@ public class UserDao {
         Integer usernameCheck = template.queryForObject("SELECT COUNT(*) FROM users WHERE username LIKE ?", Integer.class, username);
         return usernameCheck == null || usernameCheck <= 0;
     }
+    public void editPersonalInfoUser(EditPersonalInfoDto user, long userId) throws SQLException {
+        try(Connection connection = this.template.getDataSource().getConnection()) {
+            PreparedStatement ps = connection.prepareStatement("UPDATE users SET full_name = ?,username = ?,phone_number = ?,birth_date = ? WHERE id LIKE ?");
+            ps.setString(1, user.getName());
+            ps.setString(2, user.getUsername());
+            ps.setString(3, user.getPhoneNumber());
+            ps.setDate(4, user.getBirthDate() == null ? null : java.sql.Date.valueOf(user.getBirthDate()));
+            ps.setLong(5, userId);
+            ps.executeUpdate();
+        }
+    }
+
+    public void editEmail(EditEmailDto user, long userId) throws SQLException {
+        try(Connection connection = this.template.getDataSource().getConnection()) {
+            PreparedStatement ps = connection.prepareStatement("UPDATE users SET email = ? WHERE id = ?");
+            ps.setString(1, user.getEmail());
+            ps.setLong(2, userId);
+            ps.executeUpdate();
+        }
+    }
+
+    public void editPassword(EditPasswordDto user, long userId) throws SQLException {
+        try(Connection connection = this.template.getDataSource().getConnection()) {
+            PreparedStatement ps = connection.prepareStatement("UPDATE users SET password = ? WHERE id = ?");
+            ps.setString(1, user.getPassword());
+            ps.setLong(2, userId);
+            ps.executeUpdate();
+            System.out.println(userId);
+        }
+    }
+
+    private boolean isSubscribed(User user) throws SQLException {
+        try(Connection connection = this.template.getDataSource().getConnection()) {
+            PreparedStatement ps = connection.prepareStatement("SELECT subscribed FROM users WHERE email LIKE ?");
+            ps.setString(1, user.getEmail());
+            ResultSet rs = ps.executeQuery();
+            rs.next();
+            return rs.getBoolean(1);
+        }
+    }
+
+    public String subscribe(User user) throws SQLException {
+        try (Connection connection = this.template.getDataSource().getConnection()){
+            PreparedStatement subscribe = connection.prepareStatement("UPDATE users SET subscribed = true WHERE email LIKE ?");
+            boolean subed = isSubscribed(user);
+            if (subed) {
+                return "You are already subscribed.";
+            } else {
+                subscribe.setString(1, user.getEmail());
+                subscribe.executeUpdate();
+                return "You are now subscribed.";
+            }
+        }
+    }
+
+    public String unsubscribe (User user) throws SQLException {
+        try (Connection connection = this.template.getDataSource().getConnection()){
+            boolean subed = isSubscribed(user);
+            PreparedStatement unsubscribe = connection.prepareStatement("UPDATE users SET subscribed = false WHERE email LIKE ?");
+            if (!subed) {
+                return "You are not subscribed.";
+            } else {
+                unsubscribe.setString(1, user.getEmail());
+                unsubscribe.executeUpdate();
+                return "You are now unsubscribed.";
+            }
+        }
+    }
+
 }

@@ -3,19 +3,20 @@ package finalproject.emag.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import finalproject.emag.model.dao.UserDao;
+import finalproject.emag.model.dto.EditEmailDto;
+import finalproject.emag.model.dto.EditPasswordDto;
+import finalproject.emag.model.dto.EditPersonalInfoDto;
 import finalproject.emag.model.pojo.User;
 import finalproject.emag.util.GetDate;
 import finalproject.emag.util.exception.MissingValuableFieldsException;
 import finalproject.emag.util.exception.NotLoggedException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.text.ParseException;
 import java.time.LocalDate;
 
@@ -131,4 +132,85 @@ public class UserController extends BaseController {
         }
         return YOU_ARE_NOT_LOGGED_IN;
     }
+    @PutMapping(value = "/subscribe")
+    public String subscribe(HttpSession session) throws NotLoggedException, SQLException {
+        validateLogin(session);
+        return this.dao.subscribe((User)session.getAttribute(USER));
+    }
+
+    @PutMapping(value = "/unsubscribe")
+    public String unsubscribe(HttpSession session) throws NotLoggedException, SQLException {
+        validateLogin(session);
+        return this.dao.unsubscribe((User)session.getAttribute(USER));
+    }
+
+    @PutMapping(value = "/edit-personal-info")
+    public String editPersonalInfoUser(@RequestBody String input,HttpServletResponse response,HttpSession session) throws Exception{
+        validateLogin(session);
+        JsonNode jsonNode = objectMapper.readTree(input);
+        if(!jsonNode.has("full_name") || !jsonNode.has("subscribed")){
+            response.setStatus(404);
+            throw new MissingValuableFieldsException();
+        }
+        String birthDate = jsonNode.get("birth_date").textValue();
+        LocalDate date = GetDate.getDate(birthDate);
+        EditPersonalInfoDto user = new EditPersonalInfoDto(jsonNode.get("full_name").textValue(),
+                checkIfNull(jsonNode,"username"),
+                checkIfNull(jsonNode,"phone"),
+                date);
+        if(this.dao.checkIfUsernameExists(user.getUsername())) {
+            User loggedUser = (User)session.getAttribute(USER);
+            this.dao.editPersonalInfoUser(user,loggedUser.getId());
+            return EDIT_SUCCESSFUL;
+        }
+        else{
+            response.setStatus(400);
+            return "Username taken";
+        }
+    }
+
+    @PutMapping(value = "/edit-email")
+    public String editUserSecurity(@RequestBody String input,HttpServletResponse response,HttpSession session) throws Exception{
+        validateLogin(session);
+        JsonNode jsonNode = objectMapper.readTree(input);
+        if(!jsonNode.has("email") || !jsonNode.has("password")){
+            response.setStatus(404);
+            throw new MissingValuableFieldsException();
+        }
+        User loggedUser = (User)session.getAttribute(USER);
+        String email = jsonNode.get("email").textValue();
+        String pass = jsonNode.get("password").textValue();
+        if(!pass.equals(loggedUser.getPassword())){
+            response.setStatus(400);
+            return WRONG_CREDENTIALS;
+        }
+        EditEmailDto user = new EditEmailDto(email);
+        this.dao.editEmail(user,loggedUser.getId());
+        return EDIT_SUCCESSFUL;
+    }
+
+    @PutMapping(value = "/edit-password")
+    public String editPassword(@RequestBody String input,HttpSession session,HttpServletResponse response) throws Exception {
+        JsonNode jsonNode = objectMapper.readTree(input);
+        validateLogin(session);
+        if (!jsonNode.has("current_password") || !jsonNode.has("password") || !jsonNode.has("password2")) {
+            response.setStatus(404);
+            throw new MissingValuableFieldsException();
+        }
+        User loggedUser = (User)session.getAttribute(USER);
+        String currentPass = jsonNode.get("current_password").textValue();
+        String pass = jsonNode.get("password").textValue();
+        String pass2 = jsonNode.get("password2").textValue();
+        if(!currentPass.equals(loggedUser.getPassword())){
+            return WRONG_CREDENTIALS;
+        }
+        if (!pass.equals(pass2)) {
+            response.setStatus(400);
+            return "Passwords are not the same";
+        }
+        EditPasswordDto user = new EditPasswordDto(pass);
+        this.dao.editPassword(user,loggedUser.getId());
+        return EDIT_SUCCESSFUL;
+    }
+
 }
