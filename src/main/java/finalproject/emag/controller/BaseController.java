@@ -41,6 +41,7 @@ public abstract class BaseController {
         log.error("exception: "+e);
         return new ErrorMsg(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value(), LocalDateTime.now());
     }
+
     @ExceptionHandler({ParseException.class})
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
     public ErrorMsg dateParser(Exception e){
