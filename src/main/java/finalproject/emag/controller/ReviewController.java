@@ -55,5 +55,4 @@ public class ReviewController extends BaseController{
         this.dao.editReview(review);
         return "Review updated";
     }
-
 }

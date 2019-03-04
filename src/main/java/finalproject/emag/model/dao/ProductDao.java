@@ -334,6 +334,7 @@ public class ProductDao {
             ps.close();
         }
     }
+
     public void changeQuantity(long id, int quantity) throws Exception {
         checkIfProductExists(id);
         try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
@@ -352,6 +353,7 @@ public class ProductDao {
             ps.execute();
         }
     }
+
     public void insertProductInDB(AddProductDto product) throws SQLException {
         Connection c = jdbcTemplate.getDataSource().getConnection();
         try {
@@ -369,6 +371,7 @@ public class ProductDao {
             c.close();
         }
     }
+
     private long addProduct(Connection c, AddProductDto product) throws SQLException {
         PreparedStatement ps = c.prepareStatement("INSERT INTO products (subcategory_id, product_name, price, quantity, image_url) VALUES (?, ?, ?, ?, ?)", PreparedStatement.RETURN_GENERATED_KEYS);
         ps.setLong(1, product.getSubcategoryId());
@@ -453,6 +456,7 @@ public class ProductDao {
             }
         }).start();
     }
+
     public void removePromotion(RemovePromotionDto promo) throws SQLException {
         Connection connection = null;
         try {

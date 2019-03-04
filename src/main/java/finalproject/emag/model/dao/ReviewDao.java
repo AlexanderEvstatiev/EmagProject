@@ -21,15 +21,7 @@ public class ReviewDao {
     private JdbcTemplate template;
 
     private boolean hasReview(ReviewDto review) throws SQLException {
-        ArrayList<Long> ids = new ArrayList<>();
-        try(Connection connection = this.template.getDataSource().getConnection()){
-            PreparedStatement ps = connection.prepareStatement("SELECT product_id FROM reviews WHERE user_id = ?");
-            ps.setLong(1,review.getUserId());
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()){
-                ids.add(rs.getLong(1));
-            }
-        }
+        ArrayList<Long> ids = findReview(review.getUserId());
         for (Long l : ids){
             if(l == review.getProductId()){
                 return true;
@@ -37,16 +29,22 @@ public class ReviewDao {
         }
         return false;
     }
-    private boolean hasReview(DeleteReviewDto review) throws SQLException {
+
+    private ArrayList<Long> findReview(long id) throws SQLException {
         ArrayList<Long> ids = new ArrayList<>();
         try(Connection connection = this.template.getDataSource().getConnection()){
             PreparedStatement ps = connection.prepareStatement("SELECT product_id FROM reviews WHERE user_id = ?");
-            ps.setLong(1,review.getUserId());
+            ps.setLong(1,id);
             ResultSet rs = ps.executeQuery();
             while (rs.next()){
                 ids.add(rs.getLong(1));
             }
         }
+        return ids;
+    }
+
+    private boolean hasReview(DeleteReviewDto review) throws SQLException {
+        ArrayList<Long> ids = findReview(review.getUserId());
         for (Long l : ids){
             if(l == review.getProductId()){
                 return true;

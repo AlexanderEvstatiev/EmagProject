@@ -17,5 +17,4 @@ public class GetDate {
         }
         return date;
     }
-
 }

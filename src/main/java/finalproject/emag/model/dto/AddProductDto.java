@@ -30,5 +30,4 @@ public class AddProductDto {
     public void addStat(Stat stat) {
         stats.add(stat);
     }
-
 }

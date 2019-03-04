@@ -123,6 +123,7 @@ public class UserController extends BaseController {
             return "Email is taken.";
         }
     }
+
     @PostMapping(value = "/logout")
     public String logoutUser(HttpSession session) throws NotLoggedException {
         validateLogin(session);
@@ -132,6 +133,7 @@ public class UserController extends BaseController {
         }
         return YOU_ARE_NOT_LOGGED_IN;
     }
+
     @PutMapping(value = "/subscribe")
     public String subscribe(HttpSession session) throws NotLoggedException, SQLException {
         validateLogin(session);
@@ -212,5 +214,4 @@ public class UserController extends BaseController {
         this.dao.editPassword(user,loggedUser.getId());
         return EDIT_SUCCESSFUL;
     }
-
 }

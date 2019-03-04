@@ -27,7 +27,7 @@ public class ProductController extends BaseController {
     private static final int MAX_NUMBER_OF_PRODUCTS = 9999;
     private static final String MIN_PRICE = "0";
     private static final String MAX_PRICE = "99999";
-    public static final String CART = "cart";
+    private static final String CART = "cart";
 
     @Autowired
     private ProductDao dao;
@@ -216,6 +216,7 @@ public class ProductController extends BaseController {
         }
 
     }
+
     @DeleteMapping(value = "/products/promotions/{id}")
     public String removePromotion(@PathVariable("id") long productId, HttpServletRequest request) throws Exception {
         validateLoginAdmin(request.getSession());
@@ -223,5 +224,4 @@ public class ProductController extends BaseController {
         dao.removePromotion(product);
         return "Promotion removed";
     }
-
 }
