@@ -3,13 +3,12 @@ package finalproject.emag.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import finalproject.emag.model.dao.ProductDao;
-import finalproject.emag.model.dto.CartViewProductDto;
-import finalproject.emag.model.dto.GlobalViewProductDto;
-import finalproject.emag.model.dto.PromotionProductDto;
-import finalproject.emag.model.dto.RemovePromotionDto;
+import finalproject.emag.model.dto.*;
 import finalproject.emag.model.pojo.Product;
+import finalproject.emag.model.pojo.Stat;
 import finalproject.emag.util.GetDate;
 import finalproject.emag.util.exception.EmptyCartException;
+import finalproject.emag.util.exception.InvalidQuantityException;
 import finalproject.emag.util.exception.MissingValuableFieldsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -98,6 +97,59 @@ public class ProductController extends BaseController {
     public ArrayList<GlobalViewProductDto> searchProducts(@PathVariable("name") String name) throws Exception {
         return dao.searchProducts(name);
     }
+
+    @PostMapping(value = ("/products/add"))
+    public String addProduct(@RequestBody String input, HttpServletRequest request) throws Exception {
+        validateLoginAdmin(request.getSession());
+        JsonNode jsonNode = objectMapper.readTree(input);
+        int subCatId = (jsonNode.path("subcaregoryId").intValue());
+        String name = (jsonNode.path("name").asText());
+        double price = (jsonNode.path("price").doubleValue());
+        int quantity = (jsonNode.path("quantity").intValue());
+        String image = (jsonNode.path("image").asText());
+        AddProductDto product = new AddProductDto(subCatId, name, price, quantity, image);
+        JsonNode arrNode = objectMapper.readTree(input).get("stats");
+        if (arrNode.isArray()) {
+            for (JsonNode objNode : arrNode) {
+                long id = (objNode.path("id").longValue());
+                long subId = (objNode.path("subcategoryId").longValue());
+                String statName = (objNode.path("name").asText());
+                String unit = (checkIfNull(objNode, "unit"));
+                String value = (objNode.path("value").asText());
+                Stat stat = new Stat(id, subId, name, unit, value);
+                product.addStat(stat);
+            }
+        }
+        dao.insertProductInDB(product);
+        return "You successfully added the product to the DB!";
+    }
+
+    private String checkIfNull(JsonNode node,String input){
+        if(node.has(input)) {
+            return node.path(input).asText();
+        }
+        return null;
+    }
+
+    @PutMapping(value = ("/products/{id}/quantity/{quantity}"))
+    public String changeProductQuantity(@PathVariable("id") long id, @PathVariable("quantity") int quantity, HttpServletRequest request) throws Exception {
+        validateLoginAdmin(request.getSession());
+        if (quantity >= MIN_NUMBER_OF_PRODUCTS && quantity <= MAX_NUMBER_OF_PRODUCTS) {
+            dao.changeQuantity(id, quantity);
+        }
+        else {
+            throw new InvalidQuantityException();
+        }
+        return "Product with id - " + id + " now has quantity - " + quantity + ".";
+    }
+
+    @DeleteMapping(value = ("/products/{id}/delete"))
+    public String deleteProduct(@PathVariable("id") long id, HttpServletRequest request) throws Exception {
+        validateLoginAdmin(request.getSession());
+        dao.deleteProduct(id);
+        return "The product with id - " + id + " has been removed.";
+    }
+
 
     @PostMapping(value = ("/products/{id}/add"))
     public String addToCart(@PathVariable("id") long id, HttpServletRequest request) throws Exception {

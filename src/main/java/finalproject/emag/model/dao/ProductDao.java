@@ -20,6 +20,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 @Component
@@ -332,6 +333,66 @@ public class ProductDao {
             ps.execute();
             ps.close();
         }
+    }
+    public void changeQuantity(long id, int quantity) throws Exception {
+        checkIfProductExists(id);
+        try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
+            PreparedStatement ps = c.prepareStatement("UPDATE products SET quantity= ? WHERE id= ?");
+            ps.setInt(1, quantity);
+            ps.setLong(2, id);
+            ps.execute();
+        }
+    }
+
+    public void deleteProduct(long id) throws Exception {
+        checkIfProductExists(id);
+        try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
+            PreparedStatement ps = c.prepareStatement("DELETE FROM products WHERE id=?");
+            ps.setLong(1, id);
+            ps.execute();
+        }
+    }
+    public void insertProductInDB(AddProductDto product) throws SQLException {
+        Connection c = jdbcTemplate.getDataSource().getConnection();
+        try {
+            c.setAutoCommit(false);
+            long id = addProduct(c, product);
+            addStats(c, product, id);
+            c.commit();
+        }
+        catch (SQLException e) {
+            c.rollback();
+            throw new SQLException();
+        }
+        finally {
+            c.setAutoCommit(true);
+            c.close();
+        }
+    }
+    private long addProduct(Connection c, AddProductDto product) throws SQLException {
+        PreparedStatement ps = c.prepareStatement("INSERT INTO products (subcategory_id, product_name, price, quantity, image_url) VALUES (?, ?, ?, ?, ?)", PreparedStatement.RETURN_GENERATED_KEYS);
+        ps.setLong(1, product.getSubcategoryId());
+        ps.setString(2, product.getName());
+        ps.setDouble(3, product.getPrice());
+        ps.setInt(4, product.getQuantity());
+        ps.setString(5, product.getImage());
+        ps.execute();
+        ResultSet rs = ps.getGeneratedKeys();
+        rs.next();
+        return rs.getLong(1);
+    }
+
+    private void addStats(Connection c, AddProductDto product, long id) throws SQLException {
+        HashSet<Stat> stats = product.getStats();
+        for (Stat stat : stats) {
+            PreparedStatement ps = c.prepareStatement("INSERT INTO products_with_stats (product_id, stat_id, value) VALUES (?, ?, ?)");
+            ps.setLong(1, id);
+            ps.setLong(2, stat.getId());
+            ps.setString(3, stat.getValue());
+            ps.execute();
+            ps.close();
+        }
+
     }
 
     public void addPromotion(PromotionProductDto product) throws SQLException, MessagingException {

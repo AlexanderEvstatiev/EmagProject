@@ -134,4 +134,26 @@ public class UserDao {
             }
         }
     }
+    public void uploadImage(User user,String imageUrl) throws SQLException {
+        try(Connection connection = this.template.getDataSource().getConnection()){
+            PreparedStatement ps = connection.prepareStatement("UPDATE users SET image_url = ? WHERE id = ?");
+            ps.setString(1,imageUrl);
+            ps.setLong(2,user.getId());
+            ps.executeUpdate();
+        }
+    }
+
+    public String getImageUrl(long userId) throws SQLException {
+        try(Connection connection = this.template.getDataSource().getConnection()){
+            PreparedStatement ps = connection.prepareStatement("SELECT image_url FROM users WHERE id = ?");
+            ps.setLong(1,userId);
+            ResultSet rs = ps.executeQuery();
+            if(rs.next()){
+                return rs.getString(1);
+            }
+            else{
+                return null;
+            }
+        }
+    }
 }
