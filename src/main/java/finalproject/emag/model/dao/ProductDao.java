@@ -1,11 +1,11 @@
 package finalproject.emag.model.dao;
 
-import finalproject.emag.model.dto.CartViewProductDto;
-import finalproject.emag.model.dto.GlobalViewProductDto;
+import finalproject.emag.model.dto.*;
 import finalproject.emag.model.pojo.Product;
 import finalproject.emag.model.pojo.Review;
 import finalproject.emag.model.pojo.Stat;
 import finalproject.emag.model.pojo.User;
+import finalproject.emag.util.MailUtil;
 import finalproject.emag.util.exception.BaseException;
 import finalproject.emag.util.exception.ProductNotFoundException;
 import finalproject.emag.util.exception.ProductOutOfStockException;
@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import javax.mail.MessagingException;
 import javax.servlet.http.HttpSession;
 import java.sql.*;
 import java.time.LocalDate;
@@ -330,6 +331,95 @@ public class ProductDao {
             ps.setLong(2, e.getKey().getId());
             ps.execute();
             ps.close();
+        }
+    }
+
+    public void addPromotion(PromotionProductDto product) throws SQLException, MessagingException {
+        Connection connection = null;
+        try{
+            connection = this.jdbcTemplate.getDataSource().getConnection();
+            connection.setAutoCommit(false);
+            PreparedStatement putPromotion = connection.prepareStatement("INSERT INTO product_promotions(product_id,start_date,end_date,old_price,new_price) VALUES (?,?,?,?,?)");
+            PreparedStatement updateProduct = connection.prepareStatement("UPDATE products SET price = ? WHERE id = ?");
+            putPromotion.setLong(1,product.getProductId());
+            putPromotion.setDate(2,product.getStartDate() == null ? null : java.sql.Date.valueOf(product.getStartDate()));
+            putPromotion.setDate(3,product.getEndDate() == null ? null : java.sql.Date.valueOf(product.getEndDate()));
+            putPromotion.setDouble(4,product.getOldPrice());
+            putPromotion.setDouble(5,product.getNewPrice());
+            putPromotion.executeUpdate();
+            updateProduct.setDouble(1,product.getNewPrice());
+            updateProduct.setLong(2,product.getProductId());
+            updateProduct.executeUpdate();
+            PreparedStatement ps = connection.prepareStatement("SELECT product_name FROM products WHERE id = ?");
+            ps.setLong(1,product.getProductId());
+            ResultSet rs = ps.executeQuery();
+            if(rs.next()) {
+                String productName = rs.getString(1);
+                notifyForPromotion("Promotion on "+productName,"We have a new special offer on " + productName +
+                        " from " + product.getOldPrice()+" to "+product.getNewPrice());
+            }
+            connection.commit();
+
+        } catch (SQLException e) {
+            connection.rollback();
+            throw new SQLException();
+        }
+        finally {
+            connection.setAutoCommit(true);
+            connection.close();
+        }
+    }
+    private void notifyForPromotion(String title,String message) throws SQLException, MessagingException {
+        ArrayList<NotifyUserDto> users = new ArrayList<>();
+        try(Connection connection = this.jdbcTemplate.getDataSource().getConnection()) {
+            PreparedStatement ps = connection.prepareStatement("SELECT email,full_name FROM users WHERE subscribed = ?");
+            ps.setBoolean(1,true);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()){
+                users.add(new NotifyUserDto(rs.getString(1),rs.getString(2)));
+            }
+        }
+        new Thread(new Runnable() {
+            @Override
+            public void run(){
+                for (NotifyUserDto user : users){
+                    try {
+                        MailUtil.sendMail("testingemag19@gmail.com",user.getEmail(),title,message);
+                    } catch (MessagingException e) {
+                        System.out.println("Ops there was a problem sending the email.");
+                    }
+                }
+            }
+        }).start();
+    }
+    public void removePromotion(RemovePromotionDto promo) throws SQLException {
+        Connection connection = null;
+        try {
+            connection = this.jdbcTemplate.getDataSource().getConnection();
+            connection.setAutoCommit(false);
+            PreparedStatement ps = connection.prepareStatement("SELECT old_price FROM product_promotions WHERE product_id = ?");
+            ps.setLong(1,promo.getProductId());
+            ResultSet rs = ps.executeQuery();
+            if(rs.next()){
+                promo.setPrice(rs.getDouble(1));
+            }
+            PreparedStatement removePromo = connection.prepareStatement("DELETE FROM product_promotions WHERE product_id = ?");
+            removePromo.setLong(1,promo.getProductId());
+            removePromo.executeUpdate();
+            PreparedStatement putPrice = connection.prepareStatement("UPDATE products SET price = ? WHERE id = ? ");
+            putPrice.setDouble(1,promo.getPrice());
+            putPrice.setLong(2,promo.getProductId());
+            putPrice.executeUpdate();
+            connection.commit();
+
+        }
+        catch (SQLException e){
+            connection.rollback();
+            throw new SQLException();
+        }
+        finally {
+            connection.setAutoCommit(true);
+            connection.close();
         }
     }
 }

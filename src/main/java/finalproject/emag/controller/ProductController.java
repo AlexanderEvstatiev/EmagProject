@@ -1,16 +1,22 @@
 package finalproject.emag.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import finalproject.emag.model.dao.ProductDao;
 import finalproject.emag.model.dto.CartViewProductDto;
 import finalproject.emag.model.dto.GlobalViewProductDto;
+import finalproject.emag.model.dto.PromotionProductDto;
+import finalproject.emag.model.dto.RemovePromotionDto;
 import finalproject.emag.model.pojo.Product;
+import finalproject.emag.util.GetDate;
 import finalproject.emag.util.exception.EmptyCartException;
+import finalproject.emag.util.exception.MissingValuableFieldsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -137,6 +143,33 @@ public class ProductController extends BaseController {
         else {
             throw new EmptyCartException();
         }
+    }
+
+    @PostMapping(value = "/products/promotions/{id}")
+    public String addPromotion(@PathVariable("id") long productId,@RequestBody String input,HttpServletRequest request) throws Exception {
+        validateLoginAdmin(request.getSession());
+        JsonNode jsonNode = this.objectMapper.readTree(input);
+        if(!jsonNode.has("start_date")|| !jsonNode.has("end_date")||
+                !jsonNode.has("old_price")|| !jsonNode.has("new_price")){
+            throw new MissingValuableFieldsException();
+        }
+        else{
+            LocalDate startDate = GetDate.getDate(jsonNode.get("start_date").textValue());
+            LocalDate endDate = GetDate.getDate(jsonNode.get("end_date").textValue());
+            double oldPrice = jsonNode.get("old_price").asDouble();
+            double newPrice = jsonNode.get("new_price").asDouble();
+            PromotionProductDto product = new PromotionProductDto(productId,startDate,endDate,oldPrice,newPrice);
+            dao.addPromotion(product);
+            return "Promotion added";
+        }
+
+    }
+    @DeleteMapping(value = "/products/promotions/{id}")
+    public String removePromotion(@PathVariable("id") long productId, HttpServletRequest request) throws Exception {
+        validateLoginAdmin(request.getSession());
+        RemovePromotionDto product = new RemovePromotionDto(productId);
+        dao.removePromotion(product);
+        return "Promotion removed";
     }
 
 }
