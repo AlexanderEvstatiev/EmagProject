@@ -50,22 +50,23 @@ public class ProductController extends BaseController {
     }
 
     @GetMapping(value = ("/products/subcategory/{id}"))
-    public ArrayList<GlobalViewProductDto> getAllProductsBySubcategory(@PathVariable("id") long id) throws Exception {
-        return dao.getAllProductsBySubcategory(id);
+    public ArrayList<GlobalViewProductDto> getAllProductsBySubcategory(
+            @PathVariable("id") long subcatId) throws Exception {
+        return dao.getAllProductsBySubcategory(subcatId);
     }
 
     @GetMapping(value = ("/products/subcategory/{id}/filter"))
     public ArrayList<GlobalViewProductDto> getAllProductsBySubcategoryFiltered(
-            @PathVariable(value = "id") long id,
+            @PathVariable(value = "id") long subcatId,
             @RequestParam(value = "order", required = false, defaultValue = "ASC") String order,
             @RequestParam(value = "from", required = false, defaultValue = MIN_PRICE) Double min,
             @RequestParam(value = "to", required = false, defaultValue = MAX_PRICE) Double max) throws Exception {
-        return dao.getAllProductsBySubcategoryFiltered(id, order, min, max);
+        return dao.getAllProductsBySubcategoryFiltered(subcatId, order, min, max);
     }
 
     @GetMapping(value = ("/products/{id}"))
-    public Product getProductById(@PathVariable("id") long id) throws Exception {
-        return dao.getProductById(id);
+    public Product getProductById(@PathVariable("id") long productId) throws Exception {
+        return dao.getProductById(productId);
     }
 
     @GetMapping(value = ("/products/search/{name}"))
@@ -108,16 +109,16 @@ public class ProductController extends BaseController {
 
     @PutMapping(value = ("/products/{id}/quantity/{quantity}"))
     public String changeProductQuantity(
-            @PathVariable("id") long id,
+            @PathVariable("id") long productId,
             @PathVariable("quantity") int quantity, HttpServletRequest request) throws Exception {
         validateLoginAdmin(request.getSession());
         if (quantity >= MIN_NUMBER_OF_PRODUCTS && quantity <= MAX_NUMBER_OF_PRODUCTS) {
-            dao.changeQuantity(id, quantity);
+            dao.changeQuantity(productId, quantity);
         }
         else {
             throw new InvalidQuantityException();
         }
-        return "Product with id - " + id + " now has quantity - " + quantity + ".";
+        return "Product with id - " + productId + " now has quantity - " + quantity + ".";
     }
 
     @DeleteMapping(value = ("/products/{id}/delete"))
@@ -129,12 +130,12 @@ public class ProductController extends BaseController {
 
 
     @PostMapping(value = ("/products/{id}/add"))
-    public String addToCart(@PathVariable("id") long id, HttpServletRequest request) throws Exception {
+    public Product addToCart(@PathVariable("id") long productId, HttpServletRequest request) throws Exception {
         validateLogin(request.getSession());
-        HashMap<Product, Integer> cart = null;
-        Product p = dao.getProductForCart(id);
+        HashMap<CartViewProductDto, Integer> cart = null;
+        CartViewProductDto p = dao.getProductForCart(productId);
         if (request.getSession().getAttribute("cart") != null ) {
-            cart = (HashMap<Product, Integer>) request.getSession().getAttribute("cart");
+            cart = (HashMap<CartViewProductDto, Integer>) request.getSession().getAttribute("cart");
             if(cart.containsKey(p)) {
                 int quantity = cart.get(p);
                 cart.put(p, quantity+1);
@@ -145,17 +146,18 @@ public class ProductController extends BaseController {
         }
         else {
             request.getSession().setAttribute(CART, new HashMap<Product, Integer>());
-            cart = (HashMap<Product, Integer>) request.getSession().getAttribute("cart");
+            cart = (HashMap<CartViewProductDto, Integer>) request.getSession().getAttribute("cart");
             cart.put(p, 1);
         }
-        return p.getName() + " was added to your cart.";
+        Product product = dao.getProductById(productId);
+        return product;
     }
 
     @GetMapping(value = ("/view/cart"))
     public ArrayList<CartViewProductDto> viewCart(HttpServletRequest request) throws Exception{
         validateLogin(request.getSession());
         if (request.getSession().getAttribute(CART) != null) {
-            HashMap<Product, Integer> cart = (HashMap<Product, Integer>) request.getSession().getAttribute(CART);
+            HashMap<CartViewProductDto, Integer> cart = (HashMap<CartViewProductDto, Integer>) request.getSession().getAttribute(CART);
             return dao.viewCart(cart);
         }
         else {
@@ -168,7 +170,8 @@ public class ProductController extends BaseController {
         validateLogin(request.getSession());
         if (request.getSession().getAttribute(CART) != null) {
             User user = (User) request.getSession().getAttribute(USER);
-            HashMap<Product, Integer> cart = (HashMap<Product, Integer>) request.getSession().getAttribute(CART);
+            HashMap<CartViewProductDto, Integer> cart =
+                    (HashMap<CartViewProductDto, Integer>) request.getSession().getAttribute(CART);
             dao.makeOrder(user, cart);
             request.getSession().setAttribute(CART, null);
             return "Your order was successful.";

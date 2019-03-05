@@ -3,3 +3,5 @@
 04 Mar 2019 17:28:41,852  method:handleNotLogged  row:27  class name:BaseController.java  :exception: finalproject.emag.util.exception.NotLoggedException: You are not logged.
 05 Mar 2019 22:37:57,724  method:handleNotLogged  row:27  class name:BaseController.java  :exception: finalproject.emag.util.exception.NotLoggedException: You are not logged.
 05 Mar 2019 22:38:20,285  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmptyCartException: Your cart is empty.
+05 Mar 2019 23:58:11,531  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmptyCartException: Your cart is empty.
+05 Mar 2019 23:59:58,097  method:handleNotLogged  row:27  class name:BaseController.java  :exception: finalproject.emag.util.exception.NotLoggedException: You are not logged.
