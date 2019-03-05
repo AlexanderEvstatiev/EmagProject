@@ -6,6 +6,7 @@ import finalproject.emag.model.dao.ProductDao;
 import finalproject.emag.model.dto.*;
 import finalproject.emag.model.pojo.Product;
 import finalproject.emag.model.pojo.Stat;
+import finalproject.emag.model.pojo.User;
 import finalproject.emag.util.GetDate;
 import finalproject.emag.util.exception.EmptyCartException;
 import finalproject.emag.util.exception.InvalidQuantityException;
@@ -28,6 +29,7 @@ public class ProductController extends BaseController {
     private static final String MIN_PRICE = "0";
     private static final String MAX_PRICE = "99999";
     private static final String CART = "cart";
+    private static final String USER = "user";
 
     @Autowired
     private ProductDao dao;
@@ -39,12 +41,12 @@ public class ProductController extends BaseController {
     }
 
     @GetMapping(value = ("/products/filter"))
-    public ArrayList<GlobalViewProductDto> getAllProductsFiltered(@RequestParam(value = "order", required = false, defaultValue = "ASC") String order,
-                                                                  @RequestParam(value = "from", required = false, defaultValue = MIN_PRICE) Double min,
-                                                                  @RequestParam(value = "to", required = false, defaultValue = MAX_PRICE) Double max
+    public ArrayList<GlobalViewProductDto> getAllProductsFiltered(
+            @RequestParam(value = "order", required = false, defaultValue = "ASC") String order,
+            @RequestParam(value = "from", required = false, defaultValue = MIN_PRICE) Double min,
+            @RequestParam(value = "to", required = false, defaultValue = MAX_PRICE) Double max
     ) throws Exception {
-        String sql = generateSql(order, min, max, "");
-        return dao.getAllProductsFiltered(sql);
+        return dao.getAllProductsFiltered(order, min, max);
     }
 
     @GetMapping(value = ("/products/subcategory/{id}"))
@@ -53,39 +55,12 @@ public class ProductController extends BaseController {
     }
 
     @GetMapping(value = ("/products/subcategory/{id}/filter"))
-    public ArrayList<GlobalViewProductDto> getAllProductsBySubcategoryFiltered(@PathVariable(value = "id") long id,
-                                                                               @RequestParam(value = "order", required = false, defaultValue = "ASC") String order,
-                                                                               @RequestParam(value = "from", required = false, defaultValue = MIN_PRICE) Double min,
-                                                                               @RequestParam(value = "to", required = false, defaultValue = MAX_PRICE) Double max) throws Exception {
-        double minDb = dao.getMinPriceOfProductForSubcatecory(id);
-        double maxDb = dao.getMaxPriceOfProductForSubcategory(id);
-        if (min < minDb) {
-            min = minDb;
-        }
-        if (max < minDb) {
-            max = minDb;
-        }
-        if (min > maxDb) {
-            min = maxDb;
-        }
-        String sql = generateSql(order, min, max, " AND subcategory_id = " + id + " ");
-        return dao.getAllProductsBySubcategoryFiltered(id, sql);
-    }
-
-    private String generateSql(String order, Double min, Double max, String sub) throws Exception {
-        String sql = "SELECT id, product_name, price, quantity FROM products;";
-        double minDb = dao.getMinPriceOfProduct();
-        double maxDb = dao.getMaxPriceOfProduct();
-        if (min < minDb || max < minDb || min > maxDb || max < min) {
-            return sql;
-        }
-        if (order.equals("DESC")) {
-            return "SELECT id, product_name, price, quantity FROM products WHERE price BETWEEN " + min + " AND " + max + sub + " ORDER BY price DESC";
-        }
-        if (order.equals("ASC")) {
-            return "SELECT id, product_name, price, quantity FROM products WHERE price BETWEEN " + min + " AND " + max + sub + " ORDER BY price ASC";
-        }
-        return sql;
+    public ArrayList<GlobalViewProductDto> getAllProductsBySubcategoryFiltered(
+            @PathVariable(value = "id") long id,
+            @RequestParam(value = "order", required = false, defaultValue = "ASC") String order,
+            @RequestParam(value = "from", required = false, defaultValue = MIN_PRICE) Double min,
+            @RequestParam(value = "to", required = false, defaultValue = MAX_PRICE) Double max) throws Exception {
+        return dao.getAllProductsBySubcategoryFiltered(id, order, min, max);
     }
 
     @GetMapping(value = ("/products/{id}"))
@@ -132,7 +107,9 @@ public class ProductController extends BaseController {
     }
 
     @PutMapping(value = ("/products/{id}/quantity/{quantity}"))
-    public String changeProductQuantity(@PathVariable("id") long id, @PathVariable("quantity") int quantity, HttpServletRequest request) throws Exception {
+    public String changeProductQuantity(
+            @PathVariable("id") long id,
+            @PathVariable("quantity") int quantity, HttpServletRequest request) throws Exception {
         validateLoginAdmin(request.getSession());
         if (quantity >= MIN_NUMBER_OF_PRODUCTS && quantity <= MAX_NUMBER_OF_PRODUCTS) {
             dao.changeQuantity(id, quantity);
@@ -178,7 +155,8 @@ public class ProductController extends BaseController {
     public ArrayList<CartViewProductDto> viewCart(HttpServletRequest request) throws Exception{
         validateLogin(request.getSession());
         if (request.getSession().getAttribute(CART) != null) {
-            return dao.viewCart(request.getSession());
+            HashMap<Product, Integer> cart = (HashMap<Product, Integer>) request.getSession().getAttribute(CART);
+            return dao.viewCart(cart);
         }
         else {
             throw new EmptyCartException();
@@ -189,7 +167,10 @@ public class ProductController extends BaseController {
     public String makeOrder(HttpServletRequest request) throws Exception {
         validateLogin(request.getSession());
         if (request.getSession().getAttribute(CART) != null) {
-            dao.makeOrder(request.getSession());
+            User user = (User) request.getSession().getAttribute(USER);
+            HashMap<Product, Integer> cart = (HashMap<Product, Integer>) request.getSession().getAttribute(CART);
+            dao.makeOrder(user, cart);
+            request.getSession().setAttribute(CART, null);
             return "Your order was successful.";
         }
         else {
@@ -198,7 +179,8 @@ public class ProductController extends BaseController {
     }
 
     @PostMapping(value = "/products/promotions/{id}")
-    public String addPromotion(@PathVariable("id") long productId,@RequestBody String input,HttpServletRequest request) throws Exception {
+    public String addPromotion(@PathVariable("id") long productId,
+                               @RequestBody String input,HttpServletRequest request) throws Exception {
         validateLoginAdmin(request.getSession());
         JsonNode jsonNode = this.objectMapper.readTree(input);
         if(!jsonNode.has("start_date")|| !jsonNode.has("end_date")||

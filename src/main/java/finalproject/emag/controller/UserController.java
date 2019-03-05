@@ -96,9 +96,11 @@ public class UserController extends BaseController {
     }
 
     @PostMapping(value = "/register")
-    public String registerUser(@RequestBody String input, HttpServletResponse response, HttpSession session) throws Exception {
+    public String registerUser(@RequestBody String input, HttpServletResponse response, HttpSession session)
+            throws Exception {
         JsonNode jsonNode = objectMapper.readTree(input);
-        if (!jsonNode.has("email") || !jsonNode.has("password") || !jsonNode.has("password2") ||
+        if (!jsonNode.has("email") || !jsonNode.has("password") ||
+                !jsonNode.has("password2") ||
                 !jsonNode.has("full_name") || !jsonNode.has("subscribed")) {
             throw new MissingValuableFieldsException();
         }
@@ -147,7 +149,8 @@ public class UserController extends BaseController {
     }
 
     @PutMapping(value = "/edit-personal-info")
-    public String editPersonalInfoUser(@RequestBody String input,HttpServletResponse response,HttpSession session) throws Exception{
+    public String editPersonalInfoUser(@RequestBody String input,HttpServletResponse response,HttpSession session)
+            throws Exception{
         validateLogin(session);
         JsonNode jsonNode = objectMapper.readTree(input);
         if(!jsonNode.has("full_name") || !jsonNode.has("subscribed")){
@@ -172,7 +175,8 @@ public class UserController extends BaseController {
     }
 
     @PutMapping(value = "/edit-email")
-    public String editUserSecurity(@RequestBody String input,HttpServletResponse response,HttpSession session) throws Exception{
+    public String editUserSecurity(@RequestBody String input,HttpServletResponse response,HttpSession session)
+            throws Exception{
         validateLogin(session);
         JsonNode jsonNode = objectMapper.readTree(input);
         if(!jsonNode.has("email") || !jsonNode.has("password")){
@@ -192,10 +196,12 @@ public class UserController extends BaseController {
     }
 
     @PutMapping(value = "/edit-password")
-    public String editPassword(@RequestBody String input,HttpSession session,HttpServletResponse response) throws Exception {
+    public String editPassword(@RequestBody String input,HttpSession session,HttpServletResponse response)
+            throws Exception {
         JsonNode jsonNode = objectMapper.readTree(input);
         validateLogin(session);
-        if (!jsonNode.has("current_password") || !jsonNode.has("password") || !jsonNode.has("password2")) {
+        if (!jsonNode.has("current_password") || !jsonNode.has("password") ||
+                !jsonNode.has("password2")) {
             response.setStatus(404);
             throw new MissingValuableFieldsException();
         }

@@ -21,7 +21,8 @@ public class UserDao {
 
     public User getUserByEmail(String email) throws SQLException {
         try (Connection connection = this.template.getDataSource().getConnection()) {
-            PreparedStatement ps = connection.prepareStatement("SELECT id,email,password,full_name,username,phone_number,birth_date,subscribed,admin,image_url FROM users WHERE email LIKE ?");
+            PreparedStatement ps = connection.prepareStatement("SELECT id,email,password,full_name,username," +
+                    "phone_number,birth_date,subscribed,admin,image_url FROM users WHERE email LIKE ?");
             ps.setString(1, email);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -43,13 +44,16 @@ public class UserDao {
 
     public void addUser(User user) throws SQLException {
         try (Connection connection = this.template.getDataSource().getConnection()) {
-            PreparedStatement ps = connection.prepareStatement("INSERT INTO users (email,password,full_name,username,phone_number,birth_date,subscribed) VALUES (?,?,?,?,?,?,?)", PreparedStatement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement("INSERT INTO users " +
+                    "(email,password,full_name,username,phone_number,birth_date,subscribed) " +
+                    "VALUES (?,?,?,?,?,?,?)", PreparedStatement.RETURN_GENERATED_KEYS);
             ps.setString(1, user.getEmail());
             ps.setString(2, user.getPassword());
             ps.setString(3, user.getName());
             ps.setString(4, user.getUsername());
             ps.setString(5, user.getPhoneNumber());
-            ps.setDate(6, user.getBirthDate() == null ? null : java.sql.Date.valueOf(user.getBirthDate()));
+            ps.setDate(6, user.getBirthDate() == null ? null :
+                    java.sql.Date.valueOf(user.getBirthDate()));
             ps.setBoolean(7, user.isSubscribed());
             ps.executeUpdate();
             ResultSet result = ps.getGeneratedKeys();
@@ -58,21 +62,25 @@ public class UserDao {
         }
     }
     public boolean checkIfEmailExists(String email) {
-        Integer emailCheck = template.queryForObject("SELECT COUNT(*) FROM users WHERE email LIKE ?", Integer.class, email);
+        String sql = "SELECT COUNT(*) FROM users WHERE email LIKE ?";
+        Integer emailCheck = template.queryForObject(sql, Integer.class, email);
         return emailCheck == null || emailCheck <= 0;
     }
 
     public boolean checkIfUsernameExists(String username) {
-        Integer usernameCheck = template.queryForObject("SELECT COUNT(*) FROM users WHERE username LIKE ?", Integer.class, username);
+        String sql = "SELECT COUNT(*) FROM users WHERE username LIKE ?";
+        Integer usernameCheck = template.queryForObject(sql, Integer.class, username);
         return usernameCheck == null || usernameCheck <= 0;
     }
     public void editPersonalInfoUser(EditPersonalInfoDto user, long userId) throws SQLException {
         try(Connection connection = this.template.getDataSource().getConnection()) {
-            PreparedStatement ps = connection.prepareStatement("UPDATE users SET full_name = ?,username = ?,phone_number = ?,birth_date = ? WHERE id LIKE ?");
+            String sql = "UPDATE users SET full_name = ?,username = ?,phone_number = ?,birth_date = ? WHERE id LIKE ?";
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.setString(1, user.getName());
             ps.setString(2, user.getUsername());
             ps.setString(3, user.getPhoneNumber());
-            ps.setDate(4, user.getBirthDate() == null ? null : java.sql.Date.valueOf(user.getBirthDate()));
+            ps.setDate(4, user.getBirthDate() == null ? null :
+                    java.sql.Date.valueOf(user.getBirthDate()));
             ps.setLong(5, userId);
             ps.executeUpdate();
         }
@@ -109,7 +117,8 @@ public class UserDao {
 
     public String subscribe(User user) throws SQLException {
         try (Connection connection = this.template.getDataSource().getConnection()){
-            PreparedStatement subscribe = connection.prepareStatement("UPDATE users SET subscribed = true WHERE email LIKE ?");
+            String sql = "UPDATE users SET subscribed = true WHERE email LIKE ?";
+            PreparedStatement subscribe = connection.prepareStatement(sql);
             boolean subed = isSubscribed(user);
             if (subed) {
                 return "You are already subscribed.";
@@ -124,7 +133,8 @@ public class UserDao {
     public String unsubscribe (User user) throws SQLException {
         try (Connection connection = this.template.getDataSource().getConnection()){
             boolean subed = isSubscribed(user);
-            PreparedStatement unsubscribe = connection.prepareStatement("UPDATE users SET subscribed = false WHERE email LIKE ?");
+            String sql = "UPDATE users SET subscribed = false WHERE email LIKE ?";
+            PreparedStatement unsubscribe = connection.prepareStatement(sql);
             if (!subed) {
                 return "You are not subscribed.";
             } else {

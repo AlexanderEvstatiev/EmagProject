@@ -47,6 +47,19 @@ public class ProductDao {
         return  products;
     }
 
+    private String generateSql(String order, Double min, Double max, String sub) throws Exception {
+        String sql = "SELECT id, product_name, price, quantity FROM products;";
+        if (order.equals("DESC")) {
+            return "SELECT id, product_name, price, quantity FROM products" +
+                    " WHERE price BETWEEN " + min + " AND " + max + sub + " ORDER BY price DESC";
+        }
+        if (order.equals("ASC")) {
+            return "SELECT id, product_name, price, quantity FROM products" +
+                    " WHERE price BETWEEN " + min + " AND " + max + sub + " ORDER BY price ASC";
+        }
+        return sql;
+    }
+
     public ArrayList<GlobalViewProductDto> getAllProducts() throws SQLException {
         try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
             PreparedStatement ps = c.prepareStatement("SELECT id, product_name, price, quantity FROM products;");
@@ -58,15 +71,29 @@ public class ProductDao {
     public ArrayList<GlobalViewProductDto> getAllProductsBySubcategory(long id) throws Exception {
         checkSubcategoryId(id);
         try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("SELECT id, product_name, price, quantity FROM products WHERE subcategory_id = ?;");
+            String sql = "SELECT id, product_name, price, quantity FROM products WHERE subcategory_id = ?;";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, id);
             ResultSet rs = ps.executeQuery();
             return products(rs);
         }
     }
 
-    public ArrayList<GlobalViewProductDto> getAllProductsBySubcategoryFiltered(long id, String sql) throws Exception {
+    public ArrayList<GlobalViewProductDto> getAllProductsBySubcategoryFiltered(
+            long id, String order, Double min, Double max) throws Exception {
         checkSubcategoryId(id);
+        double minDb = getMinPriceOfProductForSubcategory(id);
+        double maxDb = getMaxPriceOfProductForSubcategory(id);
+        if (min < minDb) {
+            min = minDb;
+        }
+        if (max < minDb) {
+            max = minDb;
+        }
+        if (min > maxDb) {
+            min = maxDb;
+        }
+        String sql = generateSql(order, min, max, " AND subcategory_id = " + id + " ");
         try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
             PreparedStatement ps = c.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
@@ -86,15 +113,25 @@ public class ProductDao {
         }
     }
 
-    public ArrayList<GlobalViewProductDto> getAllProductsFiltered(String sql) throws SQLException {
+    public ArrayList<GlobalViewProductDto> getAllProductsFiltered(String order, Double min, Double max)
+            throws Exception {
         try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
+            double minDb = getMinPriceOfProduct();
+            double maxDb = getMaxPriceOfProduct();
+            String sql = null;
+            if (min < 0 || max < minDb || min > maxDb || max < min) {
+                sql = "SELECT id, product_name, price, quantity FROM products;";
+            }
+            else {
+                sql = generateSql(order, min, max, "");
+            }
             PreparedStatement ps = c.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
             return products(rs);
         }
     }
 
-    public double getMaxPriceOfProduct() throws SQLException {
+    private double getMaxPriceOfProduct() throws SQLException {
         try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
             PreparedStatement ps = c.prepareStatement("SELECT MAX(price) FROM emag.products;");
             ResultSet rs = ps.executeQuery();
@@ -103,9 +140,10 @@ public class ProductDao {
         }
     }
 
-    public double getMaxPriceOfProductForSubcategory(long id) throws SQLException {
+    private double getMaxPriceOfProductForSubcategory(long id) throws SQLException {
         try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("SELECT MAX(price) FROM emag.products WHERE subcategory_id = ?;");
+            String sql = "SELECT MAX(price) FROM emag.products WHERE subcategory_id = ?;";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, id);
             ResultSet rs = ps.executeQuery();
             rs.next();
@@ -113,18 +151,20 @@ public class ProductDao {
         }
     }
 
-    public double getMinPriceOfProduct() throws SQLException {
+    private double getMinPriceOfProduct() throws SQLException {
         try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("SELECT MIN(price) FROM emag.products;");
+            String sql = "SELECT MIN(price) FROM emag.products;";
+            PreparedStatement ps = c.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
             rs.next();
             return rs.getDouble(1);
         }
     }
 
-    public double getMinPriceOfProductForSubcatecory(long id) throws SQLException {
+    private double getMinPriceOfProductForSubcategory(long id) throws SQLException {
         try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("SELECT MIN(price) FROM emag.products WHERE subcategory_id = ?;");
+            String sql = "SELECT MIN(price) FROM emag.products WHERE subcategory_id = ?;";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, id);
             ResultSet rs = ps.executeQuery();
             rs.next();
@@ -134,7 +174,8 @@ public class ProductDao {
 
     private int getReviewsCountForProduct(long id) throws SQLException{
         try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM reviews WHERE product_id = ?");
+            String sql = "SELECT COUNT(*) FROM reviews WHERE product_id = ?";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, id);
             ResultSet rs = ps.executeQuery();
             rs.next();
@@ -143,7 +184,8 @@ public class ProductDao {
     }
     private int getReviewsAvgGradeForProduct(long id) throws SQLException{
         try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("SELECT ROUND(AVG(grade)) FROM reviews WHERE product_id = ?");
+            String sql = "SELECT ROUND(AVG(grade)) FROM reviews WHERE product_id = ?";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, id);
             ResultSet rs = ps.executeQuery();
             rs.next();
@@ -153,7 +195,9 @@ public class ProductDao {
 
     public ArrayList<GlobalViewProductDto> searchProducts(String name) throws Exception {
         try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("SELECT id, product_name, price, quantity FROM products WHERE product_name LIKE '%" + name + "%';");
+            String sql = "SELECT id, product_name, price, quantity FROM products " +
+                    "WHERE product_name LIKE '%" + name + "%';";
+            PreparedStatement ps = c.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
             ArrayList<GlobalViewProductDto> products = products(rs);
             if (products.size() == 0) {
@@ -166,12 +210,14 @@ public class ProductDao {
     public Product getProductById(long id) throws Exception {
         checkIfProductExists(id);
         try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("SELECT p.id, p.subcategory_id, p.product_name, p.price, p.quantity, p.image_url, s.stat_name, w.value, s.unit, s.id FROM emag.products AS p \n" +
+            String sql = "SELECT p.id, p.subcategory_id, p.product_name, p.price, p.quantity, p.image_url, " +
+                    "s.stat_name, w.value, s.unit, s.id FROM emag.products AS p \n" +
                     "JOIN products_with_stats AS w\n" +
                     "ON(p.id = w.product_id)\n" +
                     "JOIN stats AS s\n" +
                     "ON(w.stat_id = s.id)\n" +
-                    "WHERE p.id = ?;");
+                    "WHERE p.id = ?;";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, id);
             ResultSet rs = ps.executeQuery();
             Product p = new Product();
@@ -197,7 +243,8 @@ public class ProductDao {
 
     private void addReviewsToProduct(Product p, long id) throws SQLException{
         try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("SELECT user_id, title, comment, grade FROM reviews WHERE product_id = ?");
+            String sql = "SELECT user_id, title, comment, grade FROM reviews WHERE product_id = ?";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, id);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -214,7 +261,8 @@ public class ProductDao {
 
     private void checkIfProductExists(long id) throws Exception {
         try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM products WHERE id = ?");
+            String sql = "SELECT COUNT(*) FROM products WHERE id = ?";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, id);
             ResultSet rs = ps.executeQuery();
             rs.next();
@@ -230,7 +278,8 @@ public class ProductDao {
         checkIfProductExists(id);
         checkProductQuantity(id);
         try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("SELECT product_name, price, quantity FROM products WHERE id=?");
+            String sql = "SELECT product_name, price, quantity FROM products WHERE id=?";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, id);
             ResultSet rs = ps.executeQuery();
             Product p = new Product();
@@ -246,7 +295,8 @@ public class ProductDao {
 
     private void checkProductQuantity(long id) throws Exception {
         try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("SELECT quantity, product_name FROM products WHERE id = ?");
+            String sql = "SELECT quantity, product_name FROM products WHERE id = ?";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, id);
             ResultSet rs = ps.executeQuery();
             rs.next();
@@ -259,8 +309,8 @@ public class ProductDao {
         }
     }
 
-    public ArrayList<CartViewProductDto> viewCart(HttpSession session) {
-        HashMap<Product, Integer> products = (HashMap<Product, Integer>) session.getAttribute("cart");
+    public ArrayList<CartViewProductDto> viewCart(HashMap<Product, Integer> userCart) {
+        HashMap<Product, Integer> products = userCart;
         ArrayList<CartViewProductDto> cart = new ArrayList<>();
         for (Map.Entry<Product, Integer> e : products.entrySet()) {
             CartViewProductDto p = new CartViewProductDto();
@@ -273,8 +323,8 @@ public class ProductDao {
         return cart;
     }
 
-    public void makeOrder(HttpSession session) throws Exception{
-        HashMap<Product, Integer> products = (HashMap<Product, Integer>) session.getAttribute("cart");
+    public void makeOrder(User user, HashMap<Product, Integer> userCart) throws Exception{
+        HashMap<Product, Integer> products = userCart;
         for (Product p : products.keySet()) {
             checkProductQuantity(p.getId());
         }
@@ -282,14 +332,13 @@ public class ProductDao {
         for (Map.Entry<Product, Integer> e : products.entrySet() ){
             price += (e.getKey().getPrice() * e.getValue());
         }
-        User u = (User) session.getAttribute("user");
+        User u = user;
         Connection c = jdbcTemplate.getDataSource().getConnection();
         try {
             c.setAutoCommit(false);
             long productId = insertOrder(u, c, price);
             insertOrderProducts(c, products, productId);
             updateQuantity(c, products);
-            session.setAttribute("cart", null);
             c.commit();
         }
         catch (SQLException e) {
@@ -303,7 +352,8 @@ public class ProductDao {
     }
 
     private long insertOrder(User u, Connection c, double price) throws SQLException{
-        PreparedStatement ps = c.prepareStatement("INSERT INTO orders (user_id, total_price, order_date) VALUES (?, ?, ?)", PreparedStatement.RETURN_GENERATED_KEYS);
+        String sql = "INSERT INTO orders (user_id, total_price, order_date) VALUES (?, ?, ?)";
+        PreparedStatement ps = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
         ps.setLong(1, u.getId());
         ps.setDouble(2, price);
         java.sql.Date date = Date.valueOf(LocalDate.now().toString());
@@ -314,9 +364,11 @@ public class ProductDao {
         return rs.getLong(1);
     }
 
-    private void insertOrderProducts(Connection c, HashMap<Product, Integer> products, long orderId) throws SQLException {
+    private void insertOrderProducts(Connection c, HashMap<Product, Integer> products, long orderId)
+            throws SQLException {
         for (Map.Entry<Product, Integer> e : products.entrySet()) {
-            PreparedStatement ps = c.prepareStatement("INSERT INTO ordered_products (order_id, product_id, quantity) VALUES (?, ?, ?)");
+            String sql = "INSERT INTO ordered_products (order_id, product_id, quantity) VALUES (?, ?, ?)";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, orderId);
             ps.setLong(2, e.getKey().getId());
             ps.setInt(3, e.getValue());
@@ -327,7 +379,8 @@ public class ProductDao {
 
     private void updateQuantity(Connection c, HashMap<Product, Integer> products) throws SQLException {
         for (Map.Entry<Product, Integer> e : products.entrySet()) {
-            PreparedStatement ps = c.prepareStatement("UPDATE products SET quantity = quantity - ? WHERE id = ? ");
+            String sql = "UPDATE products SET quantity = quantity - ? WHERE id = ? ";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setInt(1, e.getValue());
             ps.setLong(2, e.getKey().getId());
             ps.execute();
@@ -338,7 +391,8 @@ public class ProductDao {
     public void changeQuantity(long id, int quantity) throws Exception {
         checkIfProductExists(id);
         try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("UPDATE products SET quantity= ? WHERE id= ?");
+            String sql = "UPDATE products SET quantity= ? WHERE id= ?";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setInt(1, quantity);
             ps.setLong(2, id);
             ps.execute();
@@ -348,7 +402,8 @@ public class ProductDao {
     public void deleteProduct(long id) throws Exception {
         checkIfProductExists(id);
         try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
-            PreparedStatement ps = c.prepareStatement("DELETE FROM products WHERE id=?");
+            String sql = "DELETE FROM products WHERE id=?";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, id);
             ps.execute();
         }
@@ -373,7 +428,9 @@ public class ProductDao {
     }
 
     private long addProduct(Connection c, AddProductDto product) throws SQLException {
-        PreparedStatement ps = c.prepareStatement("INSERT INTO products (subcategory_id, product_name, price, quantity, image_url) VALUES (?, ?, ?, ?, ?)", PreparedStatement.RETURN_GENERATED_KEYS);
+        String sql = "INSERT INTO products (subcategory_id, product_name, price, quantity, image_url) " +
+                "VALUES (?, ?, ?, ?, ?)";
+        PreparedStatement ps = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
         ps.setLong(1, product.getSubcategoryId());
         ps.setString(2, product.getName());
         ps.setDouble(3, product.getPrice());
@@ -388,7 +445,8 @@ public class ProductDao {
     private void addStats(Connection c, AddProductDto product, long id) throws SQLException {
         HashSet<Stat> stats = product.getStats();
         for (Stat stat : stats) {
-            PreparedStatement ps = c.prepareStatement("INSERT INTO products_with_stats (product_id, stat_id, value) VALUES (?, ?, ?)");
+            String sql = "INSERT INTO products_with_stats (product_id, stat_id, value) VALUES (?, ?, ?)";
+            PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, id);
             ps.setLong(2, stat.getId());
             ps.setString(3, stat.getValue());
@@ -403,11 +461,15 @@ public class ProductDao {
         try{
             connection = this.jdbcTemplate.getDataSource().getConnection();
             connection.setAutoCommit(false);
-            PreparedStatement putPromotion = connection.prepareStatement("INSERT INTO product_promotions(product_id,start_date,end_date,old_price,new_price) VALUES (?,?,?,?,?)");
-            PreparedStatement updateProduct = connection.prepareStatement("UPDATE products SET price = ? WHERE id = ?");
+            PreparedStatement putPromotion = connection.prepareStatement("INSERT INTO product_promotions" +
+                    "(product_id,start_date,end_date,old_price,new_price) VALUES (?,?,?,?,?)");
+            PreparedStatement updateProduct = connection.prepareStatement("UPDATE products SET price = ? " +
+                    "WHERE id = ?");
             putPromotion.setLong(1,product.getProductId());
-            putPromotion.setDate(2,product.getStartDate() == null ? null : java.sql.Date.valueOf(product.getStartDate()));
-            putPromotion.setDate(3,product.getEndDate() == null ? null : java.sql.Date.valueOf(product.getEndDate()));
+            putPromotion.setDate(2,product.getStartDate() == null ? null :
+                    java.sql.Date.valueOf(product.getStartDate()));
+            putPromotion.setDate(3,product.getEndDate() == null ? null :
+                    java.sql.Date.valueOf(product.getEndDate()));
             putPromotion.setDouble(4,product.getOldPrice());
             putPromotion.setDouble(5,product.getNewPrice());
             putPromotion.executeUpdate();
@@ -419,8 +481,8 @@ public class ProductDao {
             ResultSet rs = ps.executeQuery();
             if(rs.next()) {
                 String productName = rs.getString(1);
-                notifyForPromotion("Promotion on "+productName,"We have a new special offer on " + productName +
-                        " from " + product.getOldPrice()+" to "+product.getNewPrice());
+                notifyForPromotion("Promotion on "+productName,"We have a new special offer on " +
+                        productName + " from " + product.getOldPrice()+" to "+product.getNewPrice());
             }
             connection.commit();
 
@@ -436,7 +498,8 @@ public class ProductDao {
     private void notifyForPromotion(String title,String message) throws SQLException, MessagingException {
         ArrayList<NotifyUserDto> users = new ArrayList<>();
         try(Connection connection = this.jdbcTemplate.getDataSource().getConnection()) {
-            PreparedStatement ps = connection.prepareStatement("SELECT email,full_name FROM users WHERE subscribed = ?");
+            String sql = "SELECT email,full_name FROM users WHERE subscribed = ?";
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.setBoolean(1,true);
             ResultSet rs = ps.executeQuery();
             while (rs.next()){
@@ -462,16 +525,19 @@ public class ProductDao {
         try {
             connection = this.jdbcTemplate.getDataSource().getConnection();
             connection.setAutoCommit(false);
-            PreparedStatement ps = connection.prepareStatement("SELECT old_price FROM product_promotions WHERE product_id = ?");
+            PreparedStatement ps = connection.prepareStatement("SELECT old_price FROM product_promotions " +
+                    "WHERE product_id = ?");
             ps.setLong(1,promo.getProductId());
             ResultSet rs = ps.executeQuery();
             if(rs.next()){
                 promo.setPrice(rs.getDouble(1));
             }
-            PreparedStatement removePromo = connection.prepareStatement("DELETE FROM product_promotions WHERE product_id = ?");
+            PreparedStatement removePromo = connection.prepareStatement("DELETE FROM product_promotions " +
+                    "WHERE product_id = ?");
             removePromo.setLong(1,promo.getProductId());
             removePromo.executeUpdate();
-            PreparedStatement putPrice = connection.prepareStatement("UPDATE products SET price = ? WHERE id = ? ");
+            PreparedStatement putPrice = connection.prepareStatement("UPDATE products SET price = ? " +
+                    "WHERE id = ? ");
             putPrice.setDouble(1,promo.getPrice());
             putPrice.setLong(2,promo.getProductId());
             putPrice.executeUpdate();
