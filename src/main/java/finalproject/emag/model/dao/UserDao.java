@@ -4,6 +4,7 @@ import finalproject.emag.model.dto.EditEmailDto;
 import finalproject.emag.model.dto.EditPasswordDto;
 import finalproject.emag.model.dto.EditPersonalInfoDto;
 import finalproject.emag.model.pojo.User;
+import finalproject.emag.util.PasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -48,7 +49,7 @@ public class UserDao {
                     "(email,password,full_name,username,phone_number,birth_date,subscribed) " +
                     "VALUES (?,?,?,?,?,?,?)", PreparedStatement.RETURN_GENERATED_KEYS);
             ps.setString(1, user.getEmail());
-            ps.setString(2, user.getPassword());
+            ps.setString(2, PasswordEncoder.hashPassword(user.getPassword()));
             ps.setString(3, user.getName());
             ps.setString(4, user.getUsername());
             ps.setString(5, user.getPhoneNumber());
@@ -98,10 +99,9 @@ public class UserDao {
     public void editPassword(EditPasswordDto user, long userId) throws SQLException {
         try(Connection connection = this.template.getDataSource().getConnection()) {
             PreparedStatement ps = connection.prepareStatement("UPDATE users SET password = ? WHERE id = ?");
-            ps.setString(1, user.getPassword());
+            ps.setString(1, PasswordEncoder.hashPassword(user.getPassword()));
             ps.setLong(2, userId);
             ps.executeUpdate();
-            System.out.println(userId);
         }
     }
 

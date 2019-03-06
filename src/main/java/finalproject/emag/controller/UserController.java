@@ -11,6 +11,7 @@ import finalproject.emag.util.GetDate;
 import finalproject.emag.util.exception.MissingValuableFieldsException;
 import finalproject.emag.util.exception.NotLoggedException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -46,9 +47,10 @@ public class UserController extends BaseController {
         if (user == null) {
             return WRONG_CREDENTIALS;
         }
-        if (!password.equals(user.getPassword())) {
+        if(!BCrypt.checkpw(password,user.getPassword())){
             return WRONG_CREDENTIALS;
-        } else {
+        }
+        else {
             validateAlreadyLogged(session);
             session.setAttribute(USER, user);
             session.setAttribute("email", user.getEmail());
@@ -186,7 +188,7 @@ public class UserController extends BaseController {
         User loggedUser = (User)session.getAttribute(USER);
         String email = jsonNode.get("email").textValue();
         String pass = jsonNode.get("password").textValue();
-        if(!pass.equals(loggedUser.getPassword())){
+        if(!BCrypt.checkpw(pass,loggedUser.getPassword())){
             response.setStatus(400);
             return WRONG_CREDENTIALS;
         }
@@ -209,7 +211,7 @@ public class UserController extends BaseController {
         String currentPass = jsonNode.get("current_password").textValue();
         String pass = jsonNode.get("password").textValue();
         String pass2 = jsonNode.get("password2").textValue();
-        if(!currentPass.equals(loggedUser.getPassword())){
+        if(!BCrypt.checkpw(currentPass,loggedUser.getPassword())){
             return WRONG_CREDENTIALS;
         }
         if (!pass.equals(pass2)) {

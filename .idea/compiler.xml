@@ -15,7 +15,7 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="EmagProject" options="" />
+      <module name="EmagProject" options="-parameters" />
     </option>
   </component>
 </project>
