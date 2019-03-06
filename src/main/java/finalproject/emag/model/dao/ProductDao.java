@@ -275,26 +275,25 @@ public class ProductDao {
         }
     }
 
-    public CartViewProductDto getProductForCart(long productId) throws Exception{
+    public CartProductDto getProductForCart(long productId) throws Exception{
         checkIfProductExists(productId);
-        checkProductQuantity(productId);
+        checkProductQuantity(productId, 1);
         try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
             String sql = "SELECT product_name, price, quantity FROM products WHERE id=?";
             PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, productId);
             ResultSet rs = ps.executeQuery();
-            CartViewProductDto p = new CartViewProductDto();
+            CartProductDto p = new CartProductDto();
             while (rs.next()) {
                 p.setId(productId);
                 p.setName(rs.getString(1));
                 p.setPrice(rs.getDouble(2));
-                p.setQuantity(rs.getInt(3));
             }
             return p;
         }
     }
 
-    private void checkProductQuantity(long id) throws Exception {
+    private void checkProductQuantity(long id, int products) throws Exception {
         try (Connection c = jdbcTemplate.getDataSource().getConnection();) {
             String sql = "SELECT quantity, product_name FROM products WHERE id = ?";
             PreparedStatement ps = c.prepareStatement(sql);
@@ -303,17 +302,17 @@ public class ProductDao {
             rs.next();
             int quantity = rs.getInt(1);
             String name = rs.getString(2);
-            if (quantity > 0) {
+            if (quantity >= products) {
                 return;
             }
             throw new ProductOutOfStockException("The product " + name + " is out of stock right now.");
         }
     }
 
-    public ArrayList<CartViewProductDto> viewCart(HashMap<CartViewProductDto, Integer> userCart) {
-        HashMap<CartViewProductDto, Integer> products = userCart;
+    public ArrayList<CartViewProductDto> viewCart(HashMap<CartProductDto, Integer> userCart) {
+        HashMap<CartProductDto, Integer> products = userCart;
         ArrayList<CartViewProductDto> cart = new ArrayList<>();
-        for (Map.Entry<CartViewProductDto, Integer> e : products.entrySet()) {
+        for (Map.Entry<CartProductDto, Integer> e : products.entrySet()) {
             CartViewProductDto p = new CartViewProductDto();
             p.setId(e.getKey().getId());
             p.setName(e.getKey().getName());
@@ -324,20 +323,19 @@ public class ProductDao {
         return cart;
     }
 
-    public void makeOrder(User user, HashMap<CartViewProductDto, Integer> userCart) throws Exception{
-        HashMap<CartViewProductDto, Integer> products = userCart;
-        for (CartViewProductDto p : products.keySet()) {
-            checkProductQuantity(p.getId());
+    public void makeOrder(User user, HashMap<CartProductDto, Integer> userCart) throws Exception{
+        HashMap<CartProductDto, Integer> products = userCart;
+        for (Map.Entry<CartProductDto, Integer> e : products.entrySet()) {
+            checkProductQuantity(e.getKey().getId(), e.getValue());
         }
         double price = 0;
-        for (Map.Entry<CartViewProductDto, Integer> e : products.entrySet() ){
+        for (Map.Entry<CartProductDto, Integer> e : products.entrySet() ){
             price += (e.getKey().getPrice() * e.getValue());
         }
-        User u = user;
         Connection c = jdbcTemplate.getDataSource().getConnection();
         try {
             c.setAutoCommit(false);
-            long productId = insertOrder(u, c, price);
+            long productId = insertOrder(user, c, price);
             insertOrderProducts(c, products, productId);
             updateQuantity(c, products);
             c.commit();
@@ -365,9 +363,9 @@ public class ProductDao {
         return rs.getLong(1);
     }
 
-    private void insertOrderProducts(Connection c, HashMap<CartViewProductDto, Integer> products, long orderId)
+    private void insertOrderProducts(Connection c, HashMap<CartProductDto, Integer> products, long orderId)
             throws SQLException {
-        for (Map.Entry<CartViewProductDto, Integer> e : products.entrySet()) {
+        for (Map.Entry<CartProductDto, Integer> e : products.entrySet()) {
             String sql = "INSERT INTO ordered_products (order_id, product_id, quantity) VALUES (?, ?, ?)";
             PreparedStatement ps = c.prepareStatement(sql);
             ps.setLong(1, orderId);
@@ -378,8 +376,8 @@ public class ProductDao {
         }
     }
 
-    private void updateQuantity(Connection c, HashMap<CartViewProductDto, Integer> products) throws SQLException {
-        for (Map.Entry<CartViewProductDto, Integer> e : products.entrySet()) {
+    private void updateQuantity(Connection c, HashMap<CartProductDto, Integer> products) throws SQLException {
+        for (Map.Entry<CartProductDto, Integer> e : products.entrySet()) {
             String sql = "UPDATE products SET quantity = quantity - ? WHERE id = ? ";
             PreparedStatement ps = c.prepareStatement(sql);
             ps.setInt(1, e.getValue());
