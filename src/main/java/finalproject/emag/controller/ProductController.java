@@ -132,10 +132,10 @@ public class ProductController extends BaseController {
     @PostMapping(value = ("/products/{id}/add"))
     public Product addToCart(@PathVariable("id") long productId, HttpServletRequest request) throws Exception {
         validateLogin(request.getSession());
-        HashMap<CartViewProductDto, Integer> cart = null;
-        CartViewProductDto p = dao.getProductForCart(productId);
+        HashMap<CartProductDto, Integer> cart = null;
+        CartProductDto p = dao.getProductForCart(productId);
         if (request.getSession().getAttribute("cart") != null ) {
-            cart = (HashMap<CartViewProductDto, Integer>) request.getSession().getAttribute("cart");
+            cart = (HashMap<CartProductDto, Integer>) request.getSession().getAttribute(CART);
             if(cart.containsKey(p)) {
                 int quantity = cart.get(p);
                 cart.put(p, quantity+1);
@@ -146,7 +146,7 @@ public class ProductController extends BaseController {
         }
         else {
             request.getSession().setAttribute(CART, new HashMap<Product, Integer>());
-            cart = (HashMap<CartViewProductDto, Integer>) request.getSession().getAttribute("cart");
+            cart = (HashMap<CartProductDto, Integer>) request.getSession().getAttribute(CART);
             cart.put(p, 1);
         }
         Product product = dao.getProductById(productId);
@@ -157,7 +157,8 @@ public class ProductController extends BaseController {
     public ArrayList<CartViewProductDto> viewCart(HttpServletRequest request) throws Exception{
         validateLogin(request.getSession());
         if (request.getSession().getAttribute(CART) != null) {
-            HashMap<CartViewProductDto, Integer> cart = (HashMap<CartViewProductDto, Integer>) request.getSession().getAttribute(CART);
+            HashMap<CartProductDto, Integer> cart =
+                    (HashMap<CartProductDto, Integer>) request.getSession().getAttribute(CART);
             return dao.viewCart(cart);
         }
         else {
@@ -170,8 +171,8 @@ public class ProductController extends BaseController {
         validateLogin(request.getSession());
         if (request.getSession().getAttribute(CART) != null) {
             User user = (User) request.getSession().getAttribute(USER);
-            HashMap<CartViewProductDto, Integer> cart =
-                    (HashMap<CartViewProductDto, Integer>) request.getSession().getAttribute(CART);
+            HashMap<CartProductDto, Integer> cart =
+                    (HashMap<CartProductDto, Integer>) request.getSession().getAttribute(CART);
             dao.makeOrder(user, cart);
             request.getSession().setAttribute(CART, null);
             return "Your order was successful.";
