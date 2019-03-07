@@ -62,7 +62,7 @@ public class UserDao {
             user.setId(result.getLong(1));
         }
     }
-    public boolean checkIfEmailExists(String email) {
+    public boolean checkIfEmailIsFree(String email) {
         String sql = "SELECT COUNT(*) FROM users WHERE email LIKE ?";
         Integer emailCheck = template.queryForObject(sql, Integer.class, email);
         return emailCheck == null || emailCheck <= 0;
@@ -141,28 +141,6 @@ public class UserDao {
                 unsubscribe.setString(1, user.getEmail());
                 unsubscribe.executeUpdate();
                 return "You are now unsubscribed.";
-            }
-        }
-    }
-    public void uploadImage(User user,String imageUrl) throws SQLException {
-        try(Connection connection = this.template.getDataSource().getConnection()){
-            PreparedStatement ps = connection.prepareStatement("UPDATE users SET image_url = ? WHERE id = ?");
-            ps.setString(1,imageUrl);
-            ps.setLong(2,user.getId());
-            ps.executeUpdate();
-        }
-    }
-
-    public String getImageUrl(long userId) throws SQLException {
-        try(Connection connection = this.template.getDataSource().getConnection()){
-            PreparedStatement ps = connection.prepareStatement("SELECT image_url FROM users WHERE id = ?");
-            ps.setLong(1,userId);
-            ResultSet rs = ps.executeQuery();
-            if(rs.next()){
-                return rs.getString(1);
-            }
-            else{
-                return null;
             }
         }
     }

@@ -8,8 +8,7 @@ import finalproject.emag.model.dto.EditPasswordDto;
 import finalproject.emag.model.dto.EditPersonalInfoDto;
 import finalproject.emag.model.pojo.User;
 import finalproject.emag.util.GetDate;
-import finalproject.emag.util.exception.MissingValuableFieldsException;
-import finalproject.emag.util.exception.NotLoggedException;
+import finalproject.emag.util.exception.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
@@ -25,11 +24,8 @@ import java.time.LocalDate;
 @RequestMapping(value = "/users",produces = "application/json")
 public class UserController extends BaseController {
 
-    private static final String YOU_ARE_NOT_LOGGED_IN = "You are not logged in";
-    private static final String WRONG_CREDENTIALS = "Wrong credentials";
     private static final String EDIT_SUCCESSFUL = "Edit successful";
     private static final String USER = "user";
-    private static final String PASSWORDS_DOES_NOT_MATCH = "Passwords does not match";
 
     @Autowired
     private UserDao dao;
@@ -45,10 +41,10 @@ public class UserController extends BaseController {
         String password = jsonNode.get("password").textValue();
         User user = this.dao.getUserByEmail(email);
         if (user == null) {
-            return WRONG_CREDENTIALS;
+            throw new WrongCredentialsException();
         }
         if(!BCrypt.checkpw(password,user.getPassword())){
-            return WRONG_CREDENTIALS;
+            throw new WrongCredentialsException();
         }
         else {
             validateAlreadyLogged(session);
@@ -107,11 +103,10 @@ public class UserController extends BaseController {
             throw new MissingValuableFieldsException();
         }
         User user = getUser(jsonNode, response);
-        if (this.dao.checkIfEmailExists(user.getEmail())) {
+        if (this.dao.checkIfEmailIsFree(user.getEmail())) {
             if (dao.checkIfUsernameExists(user.getUsername())) {
                 if (!user.getPassword().equals(jsonNode.get("password2").textValue())) {
-                    response.setStatus(400);
-                    return PASSWORDS_DOES_NOT_MATCH;
+                    throw new PasswordsNotMatchingException();
                 }
                 this.dao.addUser(user);
                 session.setAttribute(USER, user);
@@ -119,23 +114,18 @@ public class UserController extends BaseController {
                 session.setMaxInactiveInterval((60 * 60));
                 return "Register successful.";
             } else {
-                response.setStatus(400);
-                return "Username taken";
+                throw new UsernameTakenException();
             }
         } else {
-            response.setStatus(400);
-            return "Email is taken.";
+            throw new EmailTakenException();
         }
     }
 
     @PostMapping(value = "/logout")
     public String logoutUser(HttpSession session) throws NotLoggedException {
         validateLogin(session);
-        if(session.getAttribute(USER)!=null) {
-            session.invalidate();
-            return "You logged out";
-        }
-        return YOU_ARE_NOT_LOGGED_IN;
+        session.invalidate();
+        return "You logged out";
     }
 
     @PutMapping(value = "/subscribe")
@@ -155,8 +145,7 @@ public class UserController extends BaseController {
             throws Exception{
         validateLogin(session);
         JsonNode jsonNode = objectMapper.readTree(input);
-        if(!jsonNode.has("full_name") || !jsonNode.has("subscribed")){
-            response.setStatus(404);
+        if(!jsonNode.has("full_name")){
             throw new MissingValuableFieldsException();
         }
         String birthDate = jsonNode.get("birth_date").textValue();
@@ -171,8 +160,7 @@ public class UserController extends BaseController {
             return EDIT_SUCCESSFUL;
         }
         else{
-            response.setStatus(400);
-            return "Username taken";
+            throw new UsernameTakenException();
         }
     }
 
@@ -185,12 +173,14 @@ public class UserController extends BaseController {
             response.setStatus(404);
             throw new MissingValuableFieldsException();
         }
+        if(!dao.checkIfEmailIsFree(jsonNode.get("email").textValue())){
+            throw new EmailTakenException();
+        }
         User loggedUser = (User)session.getAttribute(USER);
         String email = jsonNode.get("email").textValue();
         String pass = jsonNode.get("password").textValue();
         if(!BCrypt.checkpw(pass,loggedUser.getPassword())){
-            response.setStatus(400);
-            return WRONG_CREDENTIALS;
+            throw new WrongCredentialsException();
         }
         EditEmailDto user = new EditEmailDto(email);
         this.dao.editEmail(user,loggedUser.getId());
@@ -212,11 +202,10 @@ public class UserController extends BaseController {
         String pass = jsonNode.get("password").textValue();
         String pass2 = jsonNode.get("password2").textValue();
         if(!BCrypt.checkpw(currentPass,loggedUser.getPassword())){
-            return WRONG_CREDENTIALS;
+            throw new WrongCredentialsException();
         }
         if (!pass.equals(pass2)) {
-            response.setStatus(400);
-            return "Passwords are not the same";
+            throw new PasswordsNotMatchingException();
         }
         EditPasswordDto user = new EditPasswordDto(pass);
         this.dao.editPassword(user,loggedUser.getId());
