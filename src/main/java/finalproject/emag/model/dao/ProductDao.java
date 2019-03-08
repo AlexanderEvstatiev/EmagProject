@@ -278,6 +278,10 @@ public class ProductDao {
     public CartProductDto getProductForCart(long productId) throws Exception{
         checkIfProductExists(productId);
         checkProductQuantity(productId, 1);
+        return getProduct(productId);
+    }
+
+    private CartProductDto getProduct(long productId) throws SQLException {
         try(Connection c = jdbcTemplate.getDataSource().getConnection();) {
             String sql = "SELECT product_name, price, quantity FROM products WHERE id=?";
             PreparedStatement ps = c.prepareStatement(sql);
@@ -291,6 +295,11 @@ public class ProductDao {
             }
             return p;
         }
+    }
+
+    public CartProductDto getProductForRemove(long productId) throws Exception{
+        checkIfProductExists(productId);
+        return getProduct(productId);
     }
 
     private void checkProductQuantity(long id, int products) throws Exception {

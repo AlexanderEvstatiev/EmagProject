@@ -8,6 +8,7 @@ import finalproject.emag.model.pojo.Product;
 import finalproject.emag.model.pojo.Stat;
 import finalproject.emag.model.pojo.User;
 import finalproject.emag.util.GetDate;
+import finalproject.emag.util.exception.BaseException;
 import finalproject.emag.util.exception.EmptyCartException;
 import finalproject.emag.util.exception.InvalidQuantityException;
 import finalproject.emag.util.exception.MissingValuableFieldsException;
@@ -165,6 +166,38 @@ public class ProductController extends BaseController {
             return new ArrayList<>();
         }
     }
+
+    @DeleteMapping(value = ("/products/{id}/remove"))
+    public ArrayList<CartViewProductDto> removeProductFromCart(
+            @PathVariable("id") long productId, HttpServletRequest request) throws Exception {
+        validateLogin(request.getSession());
+        HashMap<CartProductDto, Integer> cart = null;
+        CartProductDto p = dao.getProductForCart(productId);
+        if (request.getSession().getAttribute("cart") != null ) {
+            cart = (HashMap<CartProductDto, Integer>) request.getSession().getAttribute(CART);
+            if(cart.containsKey(p)) {
+                int quantity = cart.get(p);
+                if (quantity > 1) {
+                    cart.put(p, quantity - 1);
+                }
+                else if (quantity == 1) {
+                    cart.remove(p);
+                }
+                if (cart.size() > 0) {
+                    return  dao.viewCart(cart);
+                }
+                else  {
+                    request.getSession().setAttribute(CART, null);
+                    return  new ArrayList<>();
+                }
+            }
+            else {
+                throw new BaseException("No such product in cart!");
+            }
+        }
+        return new ArrayList<>();
+    }
+
 
     @PostMapping(value = ("/view/cart/order"))
     public String makeOrder(HttpServletRequest request) throws Exception {

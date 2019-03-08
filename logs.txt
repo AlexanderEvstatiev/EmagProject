@@ -31,3 +31,8 @@
 08 Mar 2019 21:30:46,483  method:handleOtherErrors  row:46  class name:BaseController.java  :exception: java.sql.SQLException: Access denied for user 'Aleksandar'@'localhost' (using password: NO)
 08 Mar 2019 21:31:36,286  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmptyCartException: Your cart is empty.
 08 Mar 2019 22:44:23,524  method:handleNotLogged  row:27  class name:BaseController.java  :exception: finalproject.emag.util.exception.NotLoggedException: You are not logged.
+08 Mar 2019 23:23:28,639  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.ProductNotFoundException: This product does not exist!
+08 Mar 2019 23:23:45,873  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmptyCartException: Your cart is empty.
+08 Mar 2019 23:23:58,467  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmptyCartException: Your cart is empty.
+08 Mar 2019 23:24:27,367  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.BaseException: No such product in cart!
+08 Mar 2019 23:24:33,795  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.BaseException: No such product in cart!
