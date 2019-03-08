@@ -34,7 +34,8 @@ public class ReviewController extends BaseController{
     }
 
     @PostMapping(value = "/{id}")
-    public String addReview(@RequestBody String input, @PathVariable("id")long productId, HttpServletRequest request) throws Exception {
+    public String addReview(@RequestBody String input,
+                            @PathVariable("id")long productId, HttpServletRequest request) throws Exception {
         ReviewDto review = getReview(input,productId,request);
         this.dao.addReview(review);
         return "Review added";
@@ -50,7 +51,8 @@ public class ReviewController extends BaseController{
     }
 
     @PutMapping(value = "/{id}")
-    public String editReview(@RequestBody String input, @PathVariable("id")long productId, HttpServletRequest request) throws Exception {
+    public String editReview(@RequestBody String input,
+                             @PathVariable("id")long productId, HttpServletRequest request) throws Exception {
         ReviewDto review = getReview(input,productId,request);
         this.dao.editReview(review);
         return "Review updated";

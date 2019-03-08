@@ -162,7 +162,7 @@ public class ProductController extends BaseController {
             return dao.viewCart(cart);
         }
         else {
-            throw new EmptyCartException();
+            return new ArrayList<>();
         }
     }
 

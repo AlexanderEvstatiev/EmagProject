@@ -28,3 +28,6 @@
 08 Mar 2019 16:12:56,980  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmailInvalidFormatException: Invalid email
 08 Mar 2019 16:13:01,033  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmailTakenException: Email is taken
 08 Mar 2019 16:13:33,324  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.PasswordWrongFormatException: Password must be at least 8 symbols and have no spaces
+08 Mar 2019 21:30:46,483  method:handleOtherErrors  row:46  class name:BaseController.java  :exception: java.sql.SQLException: Access denied for user 'Aleksandar'@'localhost' (using password: NO)
+08 Mar 2019 21:31:36,286  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmptyCartException: Your cart is empty.
+08 Mar 2019 22:44:23,524  method:handleNotLogged  row:27  class name:BaseController.java  :exception: finalproject.emag.util.exception.NotLoggedException: You are not logged.

@@ -41,7 +41,8 @@ public class ImageController extends BaseController{
         return new MessageSuccess("Image upload successful", LocalDateTime.now());
     }
     @PostMapping("/products/{id}")
-    public MessageSuccess uploadProductImage(@RequestBody String input, @PathVariable("id") long productId, HttpSession session) throws Exception {
+    public MessageSuccess uploadProductImage(
+            @RequestBody String input, @PathVariable("id") long productId, HttpSession session) throws Exception {
         Product product = productDao.getProductById(productId);
         JsonNode jsonNode = objectMapper.readTree(input);
         String name = uploadImage(jsonNode,productId);

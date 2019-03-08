@@ -59,7 +59,8 @@ public class ReviewDao {
             throw new ReviewExistsException();
         }
         try(Connection connection = this.template.getDataSource().getConnection()){
-            PreparedStatement ps = connection.prepareStatement("INSERT INTO reviews(user_id,product_id,title,comment,grade) VALUES (?,?,?,?,?)");
+            String sql = "INSERT INTO reviews(user_id,product_id,title,comment,grade) VALUES (?,?,?,?,?)";
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.setLong(1,review.getUserId());
             ps.setLong(2,review.getProductId());
             ps.setString(3,review.getTitle());
@@ -75,7 +76,8 @@ public class ReviewDao {
             throw new ReviewMissingException();
         }
         try(Connection connection = this.template.getDataSource().getConnection()){
-            PreparedStatement ps = connection.prepareStatement("DELETE FROM reviews WHERE user_id = ? AND product_id = ?");
+            String sql = "DELETE FROM reviews WHERE user_id = ? AND product_id = ?";
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.setLong(1,review.getUserId());
             ps.setLong(2,review.getProductId());
             ps.executeUpdate();
@@ -88,7 +90,8 @@ public class ReviewDao {
             throw new ReviewMissingException();
         }
         try(Connection connection = this.template.getDataSource().getConnection()){
-            PreparedStatement ps = connection.prepareStatement("UPDATE reviews SET title = ?, comment = ?, grade = ? WHERE user_id = ? AND product_id = ?");
+            String sql = "UPDATE reviews SET title = ?, comment = ?, grade = ? WHERE user_id = ? AND product_id = ?";
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.setString(1,review.getTitle());
             ps.setString(2,review.getComment());
             ps.setInt(3,review.getGrade());
