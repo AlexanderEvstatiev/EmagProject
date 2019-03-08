@@ -1,0 +1,16 @@
+package finalproject.emag.model.pojo.messages;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@AllArgsConstructor
+public class MessageSuccess {
+
+    private String message;
+    private LocalDateTime time;
+}

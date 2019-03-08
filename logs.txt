@@ -1,0 +1,30 @@
+07 Mar 2019 13:48:19,445  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.ProductNotFoundException: This product does not exist!
+07 Mar 2019 13:48:36,995  method:handleNotLogged  row:27  class name:BaseController.java  :exception: finalproject.emag.util.exception.NotLoggedException: You are not logged.
+07 Mar 2019 13:48:58,044  method:handleNotLogged  row:27  class name:BaseController.java  :exception: finalproject.emag.util.exception.NotLoggedException: You are not logged.
+07 Mar 2019 13:49:49,533  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmptyCartException: Your cart is empty.
+07 Mar 2019 13:50:11,478  method:handleNotLogged  row:27  class name:BaseController.java  :exception: finalproject.emag.util.exception.NotAdminException: You are not admin.
+07 Mar 2019 13:50:37,350  method:handleNotLogged  row:27  class name:BaseController.java  :exception: finalproject.emag.util.exception.NotAdminException: You are not admin.
+07 Mar 2019 13:51:15,266  method:handleNotLogged  row:27  class name:BaseController.java  :exception: finalproject.emag.util.exception.NotAdminException: You are not admin.
+08 Mar 2019 15:19:49,760  method:handleOtherErrors  row:41  class name:BaseController.java  :exception: java.lang.IllegalStateException: getWriter() has already been called for this response
+08 Mar 2019 15:20:27,783  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmailTakenException: Email is taken
+08 Mar 2019 15:21:44,552  method:handleOtherErrors  row:41  class name:BaseController.java  :exception: java.lang.IllegalStateException: getWriter() has already been called for this response
+08 Mar 2019 15:26:01,859  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.PasswordWrongFormatException: Password must be at least 8 symbols and have no spaces
+08 Mar 2019 15:26:19,485  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.PasswordWrongFormatException: Password must be at least 8 symbols and have no spaces
+08 Mar 2019 15:26:25,637  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.PasswordWrongFormatException: Password must be at least 8 symbols and have no spaces
+08 Mar 2019 15:26:56,776  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.PasswordWrongFormatException: Password must be at least 8 symbols and have no spaces
+08 Mar 2019 15:28:04,744  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.PasswordWrongFormatException: Password must be at least 8 symbols and have no spaces
+08 Mar 2019 15:28:12,565  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.PasswordWrongFormatException: Password must be at least 8 symbols and have no spaces
+08 Mar 2019 15:29:29,246  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.PasswordWrongFormatException: Password must be at least 8 symbols and have no spaces
+08 Mar 2019 15:30:04,811  method:handleMyErrors  row:34  class name:BaseController.java  :exception: finalproject.emag.util.exception.PasswordWrongFormatException: Password must be at least 8 symbols and have no spaces
+08 Mar 2019 15:37:28,231  method:handleMyErrors  row:33  class name:BaseController.java  :exception: finalproject.emag.util.exception.PasswordWrongFormatException: Password must be at least 8 symbols and have no spaces
+08 Mar 2019 15:38:08,909  method:handleMyErrors  row:33  class name:BaseController.java  :exception: finalproject.emag.util.exception.WrongCredentialsException: Wrong credentials
+08 Mar 2019 15:38:17,026  method:handleMyErrors  row:33  class name:BaseController.java  :exception: finalproject.emag.util.exception.WrongCredentialsException: Wrong credentials
+08 Mar 2019 15:55:54,991  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.PhoneWrongFormatException: Not a valid phone number
+08 Mar 2019 15:56:01,045  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmailTakenException: Email is taken
+08 Mar 2019 16:05:46,904  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.MissingValuableFieldsException: Missing valuable fields
+08 Mar 2019 16:05:52,096  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.MissingValuableFieldsException: Missing valuable fields
+08 Mar 2019 16:10:33,530  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.PhoneWrongFormatException: Not a valid phone number
+08 Mar 2019 16:12:47,273  method:handleNotLogged  row:27  class name:BaseController.java  :exception: finalproject.emag.util.exception.NotLoggedException: You are not logged.
+08 Mar 2019 16:12:56,980  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmailInvalidFormatException: Invalid email
+08 Mar 2019 16:13:01,033  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.EmailTakenException: Email is taken
+08 Mar 2019 16:13:33,324  method:handleMyErrors  row:39  class name:BaseController.java  :exception: finalproject.emag.util.exception.PasswordWrongFormatException: Password must be at least 8 symbols and have no spaces

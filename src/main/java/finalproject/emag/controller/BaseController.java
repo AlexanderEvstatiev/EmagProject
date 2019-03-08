@@ -1,11 +1,11 @@
 package finalproject.emag.controller;
 
-import finalproject.emag.model.pojo.ErrorMsg;
+import finalproject.emag.model.pojo.messages.ErrorMsg;
 import finalproject.emag.model.pojo.User;
-import finalproject.emag.util.exception.AlreadyLoggedException;
 import finalproject.emag.util.exception.BaseException;
 import finalproject.emag.util.exception.NotAdminException;
 import finalproject.emag.util.exception.NotLoggedException;
+import finalproject.emag.util.exception.WrongCredentialsException;
 import org.apache.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -27,7 +27,12 @@ public abstract class BaseController {
         log.error("exception: "+e);
         return new ErrorMsg(e.getMessage(), HttpStatus.UNAUTHORIZED.value(), LocalDateTime.now());
     }
-
+    @ExceptionHandler({WrongCredentialsException.class})
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
+    public ErrorMsg missingFields(Exception e){
+        log.error("exception: "+e);
+        return new ErrorMsg(e.getMessage(),HttpStatus.NOT_FOUND.value(),LocalDateTime.now());
+    }
     @ExceptionHandler({BaseException.class})
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
     public ErrorMsg handleMyErrors(Exception e){
@@ -63,12 +68,6 @@ public abstract class BaseController {
             if(!logged.isAdmin()){
                 throw new NotAdminException();
             }
-        }
-    }
-
-    protected void validateAlreadyLogged(HttpSession session) throws AlreadyLoggedException {
-        if(session.getAttribute("user")!=null){
-            throw new AlreadyLoggedException();
         }
     }
 }

@@ -4,7 +4,10 @@ import finalproject.emag.model.dto.EditEmailDto;
 import finalproject.emag.model.dto.EditPasswordDto;
 import finalproject.emag.model.dto.EditPersonalInfoDto;
 import finalproject.emag.model.pojo.User;
+import finalproject.emag.model.pojo.messages.MessageSuccess;
 import finalproject.emag.util.PasswordEncoder;
+import finalproject.emag.util.exception.AlreadySubscribedException;
+import finalproject.emag.util.exception.NotSubscribedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -13,6 +16,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 
 @Component
 public class UserDao {
@@ -115,32 +119,32 @@ public class UserDao {
         }
     }
 
-    public String subscribe(User user) throws SQLException {
+    public MessageSuccess subscribe(User user) throws SQLException, AlreadySubscribedException {
         try (Connection connection = this.template.getDataSource().getConnection()){
             String sql = "UPDATE users SET subscribed = true WHERE email LIKE ?";
             PreparedStatement subscribe = connection.prepareStatement(sql);
             boolean subed = isSubscribed(user);
             if (subed) {
-                return "You are already subscribed.";
+                throw new AlreadySubscribedException();
             } else {
                 subscribe.setString(1, user.getEmail());
                 subscribe.executeUpdate();
-                return "You are now subscribed.";
+                return new MessageSuccess("You are now subscribed.", LocalDateTime.now());
             }
         }
     }
 
-    public String unsubscribe (User user) throws SQLException {
+    public MessageSuccess unsubscribe (User user) throws SQLException, NotSubscribedException {
         try (Connection connection = this.template.getDataSource().getConnection()){
             boolean subed = isSubscribed(user);
             String sql = "UPDATE users SET subscribed = false WHERE email LIKE ?";
             PreparedStatement unsubscribe = connection.prepareStatement(sql);
             if (!subed) {
-                return "You are not subscribed.";
+                throw new NotSubscribedException();
             } else {
                 unsubscribe.setString(1, user.getEmail());
                 unsubscribe.executeUpdate();
-                return "You are now unsubscribed.";
+                return new MessageSuccess("You are now unsubscribed.",LocalDateTime.now());
             }
         }
     }

@@ -512,7 +512,7 @@ public class ProductDao {
                     try {
                         MailUtil.sendMail("testingemag19@gmail.com",user.getEmail(),title,message);
                     } catch (MessagingException e) {
-                        System.out.println("Ops there was a problem sending the email.");
+                        System.out.println("Ops there was a problem sending the email."+e.getMessage());
                     }
                 }
             }

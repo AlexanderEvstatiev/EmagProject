@@ -7,6 +7,7 @@ import finalproject.emag.model.dao.ProductDao;
 import finalproject.emag.model.dao.UserDao;
 import finalproject.emag.model.pojo.Product;
 import finalproject.emag.model.pojo.User;
+import finalproject.emag.model.pojo.messages.MessageSuccess;
 import finalproject.emag.util.exception.ImageMissingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -14,10 +15,11 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
 import java.io.*;
+import java.time.LocalDateTime;
 import java.util.Base64;
 
 @RestController
-@RequestMapping(value = "/images")
+@RequestMapping(value = "/images",produces = "application/json")
 public class ImageController extends BaseController{
 
     private static final String IMAGE_PATH = "C:\\Users\\rache\\Desktop\\images\\";
@@ -29,23 +31,23 @@ public class ImageController extends BaseController{
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping("/users")
-    public String uploadUserImage(@RequestBody String input, HttpSession session) throws Exception {
+    public MessageSuccess uploadUserImage(@RequestBody String input, HttpSession session) throws Exception {
         validateLogin(session);
         User user = (User) session.getAttribute("user");
         JsonNode jsonNode = objectMapper.readTree(input);
         String name = uploadImage(jsonNode,user.getId());
         user.setImageUrl(name);
         this.dao.uploadUserImage(user,user.getImageUrl());
-        return "Image upload successful";
+        return new MessageSuccess("Image upload successful", LocalDateTime.now());
     }
     @PostMapping("/products/{id}")
-    public String uploadProductImage(@RequestBody String input,@PathVariable("id") long productId, HttpSession session) throws Exception {
+    public MessageSuccess uploadProductImage(@RequestBody String input, @PathVariable("id") long productId, HttpSession session) throws Exception {
         Product product = productDao.getProductById(productId);
         JsonNode jsonNode = objectMapper.readTree(input);
         String name = uploadImage(jsonNode,productId);
         product.setImageUrl(name);
         this.dao.uploadProductImage(product,product.getImageUrl());
-        return "Image upload successful";
+        return new MessageSuccess("Image upload successful", LocalDateTime.now());
     }
     private String uploadImage(JsonNode jsonNode,long id) throws IOException {
         String base64 = jsonNode.get("image_url").textValue();
